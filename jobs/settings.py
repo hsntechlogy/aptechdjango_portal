@@ -1,13 +1,21 @@
 import os
 import sys
 from datetime import timedelta
+<<<<<<< HEAD
 from pathlib import Path
+=======
+
+>>>>>>> 22a1e464de6d88d694fc8d7e62562c2666c47c6b
 import environ
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+<<<<<<< HEAD
 BASE_DIR = Path(__file__).resolve().parent.parent
+=======
+
+>>>>>>> 22a1e464de6d88d694fc8d7e62562c2666c47c6b
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 env = environ.Env()
