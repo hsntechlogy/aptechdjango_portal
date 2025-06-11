@@ -6,11 +6,14 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, DetailView, ListView, TemplateView
 
+# <<< ADD THIS LINE >>>
+from django.shortcuts import render, redirect, get_object_or_404 
+
+# Adjust imports based on your actual structure
 from ..decorators import user_is_employee
 from ..forms import ApplyJobForm
 from ..models import Applicant, Favorite, Job
-
-
+from jobs.models import Company, CompanyReview
 class HomeView(ListView):
     model = Job
     template_name = "home.html"
@@ -141,3 +144,47 @@ def favorite(request):
     except Favorite.DoesNotExist:
         Favorite.objects.create(job_id=job_id, user_id=user_id)
         return JsonResponse(data={"auth": True, "status": "added", "message": "Job added to your favorite list"})
+
+# <<< Company Detail View >>>
+class CompanyDetailView(DetailView):
+    model = Company # Use the Company model from jobs.models
+    template_name = 'jobs/company_details.html' # Path: templates/jobs/company_details.html
+    context_object_name = 'company' # The object will be available as 'company' in the template
+    pk_url_kwarg = 'pk' # Expects 'pk' from the URL pattern
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company = self.get_object()
+        context['jobs_by_company'] = company.jobs.filter(is_published=True).order_by('-created_at') # Get jobs posted by this company
+        context['reviews'] = company.reviews.all().order_by('-created_at') # Get reviews for this company (using 'reviews' related_name)
+        return context
+
+# <<< The add_review view function >>>
+# Assuming this is in jobsapp/views.py or jobsapp/views/home.py
+# and imported in jobsapp/urls.py
+def add_review(request, company_id):
+    company = get_object_or_404(Company, id=company_id)
+
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to leave a review.")
+            return redirect('accounts:login')
+
+        try:
+            rating = int(request.POST.get('rating'))
+            if not (1 <= rating <= 5):
+                raise ValueError("Rating must be between 1 and 5.")
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid rating. Please enter a number between 1 and 5.")
+            return render(request, 'jobs/add_review.html', {'company': company})
+
+        comment = request.POST.get('comment', '').strip()
+        if not comment:
+            messages.error(request, "Comment cannot be empty.")
+            return render(request, 'jobs/add_review.html', {'company': company})
+
+        CompanyReview.objects.create(company=company, user=request.user, rating=rating, comment=comment)
+        messages.success(request, "Your review has been submitted!")
+        return redirect('jobs:company_detail', pk=company.id) # Redirect to the company's detail page
+
+    return render(request, 'jobs/add_review.html', {'company': company})

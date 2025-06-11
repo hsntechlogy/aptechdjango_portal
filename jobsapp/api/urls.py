@@ -4,7 +4,7 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.routers import DefaultRouter
 
-from .views import (
+from .views import ( # Assuming these views are made available via jobsapp.api.views/__init__.py or jobsapp.api.views.py
     ApplicantsListAPIView,
     ApplicantsPerJobListAPIView,
     AppliedJobsAPIView,

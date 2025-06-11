@@ -1,73 +1,88 @@
+    # D:\django-job-portal-master\jobsapp\models.py
+
 from django.db import models
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
+from .manager import JobManager 
 
-from accounts.models import User
-from tags.models import Tag
-
-from .manager import JobManager
-
-JOB_TYPE = (("1", "Full time"), ("2", "Part time"), ("3", "Internship"))
+from jobs.models import Company # IMPORTANT: Ensure Company model is imported from the 'jobs' app
+from categories.models import Category # IMPORTANT: Ensure Category model is imported
+from tags.models import Tag # IMPORTANT: Ensure Tag model is imported
 
 
 class Job(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=300)
-    description = models.TextField()
-    location = models.CharField(max_length=150)
-    type = models.CharField(choices=JOB_TYPE, max_length=10)
-    category = models.CharField(max_length=100)
-    last_date = models.DateTimeField()
-    company_name = models.CharField(max_length=100)
-    company_description = models.CharField(max_length=300)
-    website = models.CharField(max_length=100, default="")
-    created_at = models.DateTimeField(default=timezone.now)
-    filled = models.BooleanField(default=False)
-    salary = models.IntegerField(default=0, blank=True)
-    tags = models.ManyToManyField(Tag)
-    vacancy = models.IntegerField(default=1)
+        # These ForeignKeys are now non-nullable in the model definition
+        company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='jobs')
+        
+        title = models.CharField(max_length=300)
+        location = models.CharField(max_length=150)
+        salary = models.IntegerField(default=0, blank=True, null=True)
+        description = models.TextField()
+        
+        category = models.ForeignKey(Category, on_delete=models.RESTRICT) # Non-nullable, restrict delete for integrity
+        tags = models.ManyToManyField(Tag, blank=True) # Blank=True means it's not required in forms, but exists.
 
-    objects = JobManager()
+        job_type_choices = (
+            ('1', 'Full time'),
+            ('2', 'Part time'),
+            ('3', 'Internship'),
+        )
+        type = models.CharField(max_length=10, choices=job_type_choices, default='1')
 
-    class Meta:
-        ordering = ["id"]
+        vacancy = models.IntegerField(default=0)
+        last_date = models.DateField()
+        is_published = models.BooleanField(default=False)
+        created_at = models.DateTimeField(auto_now_add=True)
+        filled = models.BooleanField(default=False)
+        user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    def get_absolute_url(self):
-        return reverse("jobs:jobs-detail", args=[self.id])
+        objects = JobManager() 
 
-    def __str__(self):
-        return self.title
+        # --- @property DECORATORS for accessing Company data ---
+        @property
+        def company_name(self):
+            return self.company.name if self.company else "N/A"
 
+        @property
+        def company_description(self):
+            return self.company.description if self.company else "No description provided."
+
+        @property
+        def website(self):
+            return self.company.website if self.company else "#"
+
+        def get_absolute_url(self):
+            return reverse('jobs:jobs-detail', kwargs={'id': self.id})
+
+        def __str__(self):
+            return self.title
+
+class JobApplication(models.Model):
+        job = models.ForeignKey(Job, on_delete=models.CASCADE)
+        applicant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+        created_at = models.DateTimeField(auto_now_add=True)
+
+        def __str__(self):
+            return self.applicant.email
 
 class Applicant(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applicants")
-    created_at = models.DateTimeField(default=timezone.now)
-    comment = models.TextField(blank=True, null=True)
-    status = models.SmallIntegerField(default=1)
+        user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+        job = models.ForeignKey(Job, on_delete=models.CASCADE)
+        created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        ordering = ["id"]
-        unique_together = ["user", "job"]
+        class Meta:
+            unique_together = ('user', 'job') # Ensure this unique constraint is defined if you need it
 
-    def __str__(self):
-        return self.user.get_full_name()
-
-    @property
-    def get_status(self):
-        if self.status == 1:
-            return "Pending"
-        elif self.status == 2:
-            return "Accepted"
-        else:
-            return "Rejected"
-
+        def __str__(self):
+            return self.user.email
 
 class Favorite(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="favorites")
-    created_at = models.DateTimeField(default=timezone.now)
-    soft_deleted = models.BooleanField(default=False)
+        user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+        job = models.ForeignKey(Job, on_delete=models.CASCADE)
+        soft_deleted = models.BooleanField(default=False)
+        created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.job.title
+        def __str__(self):
+            return f"{self.user.email} favorited {self.job.title}"
+    

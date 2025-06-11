@@ -1,31 +1,23 @@
 import os
 import sys
 from datetime import timedelta
-<<<<<<< HEAD
 from pathlib import Path
-=======
-
->>>>>>> 22a1e464de6d88d694fc8d7e62562c2666c47c6b
 import environ
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-<<<<<<< HEAD
 BASE_DIR = Path(__file__).resolve().parent.parent
-=======
-
->>>>>>> 22a1e464de6d88d694fc8d7e62562c2666c47c6b
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 env = environ.Env()
 
 SECRET_KEY = "@pzqp#x^+#(olu#wy(6=mi9&a8n+g&x#af#apn07@j=5oin=xb"
 
-DEBUG = env("DEBUG", default=False)
-print("DEBUG: ", DEBUG)
 
-# DEBUG = True
+DEBUG = env("DEBUG", default=False) # Comment out or remove this line
+
+DEBUG = True
 SITE_ID = 1
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -46,6 +38,7 @@ INSTALLED_APPS = [
     "jobsapp",
     "resume_cv",
     "accounts",
+    "notifications",
     "tags",
     "oauth2_provider",
     "social_django",
@@ -53,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "graphene_django",
     "categories",
+    "jobs",
     "django_extensions",
 ]
 
@@ -97,16 +91,20 @@ WSGI_APPLICATION = "jobs.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
+# job_portal/settings.py
+
 DATABASES = {
-    "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "db.sqlite3")},
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    #     'NAME': 'ghuyhfun',
-    #     'USER': 'ghuyhfun',
-    #     'PASSWORD': 'ZMp3Pi11S9RJ7DVmovpo2aPo3rYiWlm3',
-    #     'HOST': 'baasu.db.elephantsql.com',
-    #     'PORT': '5432',
-    # }
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'jobportal', # e.g., 'job_portal_db'
+        'USER': 'root',       # e.g., 'root' or a specific user
+        'PASSWORD': '',   # e.g., 'mypassword'
+        'HOST': 'localhost',                 # Or the IP address/hostname of your MySQL server
+        'PORT': '3306',                      # Default MySQL port
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'", # Recommended for MySQL compatibility
+        }
+    }
 }
 
 # Password validation
@@ -175,7 +173,8 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
 
-AUTH_USER_MODEL = "accounts.user"
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -264,15 +263,18 @@ LOGIN_URL = reverse_lazy("accounts:login")
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
+    # D:\django-job-portal-master\django_job_portal\settings.py
+
 AUTHENTICATION_BACKENDS = (
-    "social_core.backends.github.GithubOAuth2",
-    "social_core.backends.twitter.TwitterOAuth",
-    "social_core.backends.facebook.FacebookOAuth2",
-    "social_core.backends.linkedin.LinkedinOAuth2",
-    "social_core.backends.google.GoogleOAuth2",
-    "graphql_jwt.backends.JSONWebTokenBackend",
-    "django.contrib.auth.backends.ModelBackend",
-)
+        'django.contrib.auth.backends.ModelBackend', # <<< THIS SHOULD BE FIRST FOR ADMIN LOGIN
+        "social_core.backends.github.GithubOAuth2",
+        "social_core.backends.twitter.TwitterOAuth",
+        "social_core.backends.facebook.FacebookOAuth2",
+        "social_core.backends.linkedin.LinkedinOAuth2",
+        "social_core.backends.google.GoogleOAuth2",
+        "graphql_jwt.backends.JSONWebTokenBackend", # Keep this for GraphQL, but after ModelBackend
+    )
+    
 
 SOCIAL_AUTH_GITHUB_KEY = env("SOCIAL_AUTH_GITHUB_KEY", default="")
 SOCIAL_AUTH_GITHUB_SECRET = env("SOCIAL_AUTH_GITHUB_SECRET", default="")
@@ -333,3 +335,10 @@ if ENABLE_PROMETHEUS:
     MIDDLEWARE.append("jobs.middlewares.CustomMiddleware")
     MIDDLEWARE.append("jobs.middlewares.ResponseTimeMiddleware")
     MIDDLEWARE.append("jobs.middlewares.ErrorTrackingMiddleware")
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'hsntheintrovert@gmail.com' # Your Gmail address
+EMAIL_HOST_PASSWORD = 'gzlubvxvbbczhwjq'      # Your 16-digit App Password

@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
         super(UserSerializer, self).__init__(*args, **kwargs)
 
     class Meta:
-        model = User
+        model = CustomUser
         # fields = "__all__"
         exclude = ("password", "user_permissions", "groups", "is_staff", "is_active", "is_superuser", "last_login")
 
@@ -19,7 +19,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True, label="Confirm password")
 
     class Meta:
-        model = User
+        model = CustomUser
         fields = ["email", "password", "password2", "gender", "role"]
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -29,7 +29,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        if CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError({"email": "Email addresses must be unique."})
         return value
 
@@ -38,7 +38,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         password = validated_data["password"]
         gender = validated_data["gender"]
         role = validated_data["role"]
-        user = User(email=email, gender=gender, role=role)
+        user =  CustomUser(email=email, gender=gender, role=role)
         user.set_password(password)
         user.save()
         return user

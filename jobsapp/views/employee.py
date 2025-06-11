@@ -5,7 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, UpdateView
 
 from accounts.forms import EmployeeProfileUpdateForm
-from accounts.models import User
+from accounts.models import CustomUser
 from jobsapp.decorators import user_is_employee
 from jobsapp.models import Applicant, Favorite
 
@@ -32,7 +32,7 @@ class EmployeeMyJobsListView(ListView):
 
 
 class EditProfileView(UpdateView):
-    model = User
+    model = CustomUser
     form_class = EmployeeProfileUpdateForm
     context_object_name = "employee"
     template_name = "jobs/employee/edit-profile.html"

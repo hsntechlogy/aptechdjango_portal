@@ -1,11 +1,16 @@
+# D:\django-job-portal-master\resume_cv\models.py (THE CORRECT VERSION)
+
 from time import strftime
 
 from django.db import models
 import uuid
 
-from accounts.models import User
-from utils.filename import generate_file_name
+from accounts.models import CustomUser  # Correct: Importing CustomUser from accounts app
+from utils.filename import generate_file_name # Correct: Importing a utility function
 
+# >>> IMPORTANT: There should be NO import statements here like:
+# from .admin import ResumeCv, ResumeCvCategory, ResumeCvTemplate # OR similar
+# from resume_cv.admin import * # OR similar
 
 def resume_cv_directory_path(instance, filename):
     return "resumes/{0}/{1}".format(strftime("%Y/%m/%d"), generate_file_name() + "." + filename.split(".")[-1])
@@ -40,7 +45,7 @@ class ResumeCvTemplate(models.Model):
 
 
 class ResumeCv(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="resume_cvs")
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="resume_cvs")
     template = models.ForeignKey(ResumeCvTemplate, on_delete=models.CASCADE, related_name="resume_cvs")
     code = models.UUIDField(default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
