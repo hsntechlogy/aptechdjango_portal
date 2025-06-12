@@ -1,147 +1,141 @@
+{# D:\django-job-portal-master\templates\home.html #}
+
 {% extends 'base.html' %}
 {% load static %}
-{% load i18n %}
+{% load i18n %} {# Load i18n for translations #}
+{% load humanize %} {# For intcomma filter #}
+
 {% block title %}
-    Home
+    {% trans 'Home' %}
 {% endblock %}
 
 {% block content %}
 
-    <section class="job-form-section job-form-section--image">
+    <!-- Hero Section -->
+    <section class="hero text-white text-center py-5">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <div class="job-form-box">
-                        <h2 class="heading">Find a <span class="accent">job</span> you will
-                            <span class="accent">love</span>.
-                        </h2>
-                        <form id="job-main-form" method="get" action="{% url 'jobs:search' %}" class="job-main-form">
-                            <div class="controls">
-                                <div class="row align-items-center">
-                                    <div class="col-md-5">
-                                        <div class="form-group">
-                                            <label for="profession">{% trans 'Position' %}</label>
-                                            <input type="text" id="profession" name="position"
-                                                   placeholder="Position you are looking for" class="form-control">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <div class="form-group">
-                                            <label for="location">Location</label>
-                                            <input type="text" id="location" name="location"
-                                                   placeholder="Any particular location?" class="form-control">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="submit"
-                                                class="btn btn-outline-white-primary job-main-form__button">
-                                            <i class="fa fa-search"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            <h1 class="display-4 mb-3">{% trans 'Find Your Dream Job Today!' %}</h1>
+            <p class="lead mb-4">{% trans 'Explore thousands of job opportunities from top companies.' %}</p>
+            <form action="{% url 'jobsapp:search' %}" method="GET" class="form-inline justify-content-center">
+                <input type="text" name="position" placeholder="{% trans 'Job title or keyword' %}" class="form-control mr-sm-2 mb-2 mb-sm-0 rounded-pill shadow-sm" style="width: 250px;">
+                <input type="text" name="location" placeholder="{% trans 'Location' %}" class="form-control mr-sm-2 mb-2 mb-sm-0 rounded-pill shadow-sm" style="width: 200px;">
+                <button type="submit" class="btn btn-primary rounded-pill shadow-sm">{% trans 'Search Jobs' %}</button>
+            </form>
         </div>
     </section>
-    <section class="bg-light-gray">
+
+    <!-- Trending Jobs Section -->
+    <section class="py-5 bg-light">
         <div class="container">
-            <h3 class="heading">Featured jobs</h3>
-            <div class="row featured align-items-stretch">
-                {% for job in jobs %}
-                    <div class="col-lg-4 mb-5 mb-lg-0">
-                        <div class="box-image-text bg-visible full-height">
-                            <div class="top">
-                                <a href="#">
-                                    <div class="image">
-                                        <img src="{% static 'img/featured1.jpg' %}" alt="" class="img-fluid">
-                                    </div>
-                                    <div class="bg"></div>
-                                    <div class="logo">
-                                        <img src="{% static 'img/company-1.png' %}" alt="" style="max-width: 80px;">
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="content">
-                                <h5><a href="{% url 'jobs:jobs-detail' job.id %}">{{ job.title }}</a></h5>
-                                <p class="featured__details"><i class="fa fa-map-marker job__location"></i>
-                                    {{ job.location }}
-                                    {% if job.type == '1' %}
-                                        <span class="badge featured-badge badge-success">Full time</span>
-                                    {% elif job.type == '2' %}
-                                        <span class="badge featured-badge badge-primary">Part time</span>
+            <h2 class="text-center mb-4">{% trans 'Trending Jobs' %}</h2>
+            <div class="row">
+                {% for job in trendings %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">{{ job.title }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    {% if job.company %}
+                                        {{ job.company.name }}
                                     {% else %}
-                                        <span style="color: #ffffff;" class="badge featured-badge badge-warning">Internship</span>
+                                        {% trans 'Unknown Company' %}
+                                    {% endif %}
+                                </h6>
+                                <p class="card-text"><i class="fa fa-map-marker"></i> {{ job.location }}</p>
+                                <p class="card-text">{% trans 'Type' %}: 
+                                    {% if job.type == '1' %}Full time
+                                    {% elif job.type == '2' %}Part time
+                                    {% else %}Internship
                                     {% endif %}
                                 </p>
-                                {% for tag in job.tags.all %}
-                                    <span style="color: #ffffff;"
-                                          class="badge featured-badge badge-secondary">{{ tag.name }}</span>
-                                {% endfor %}
-                                <p>{{ job.description | truncatewords_html:30 | safe }}</p>
+                                <p class="card-text">{% trans 'Salary' %}: 
+                                    {% if job.salary > 0 %}
+                                        {{ job.salary | intcomma }}/{% trans 'Monthly' %}
+                                    {% else %}
+                                        {% trans 'Negotiable' %}
+                                    {% endif %}
+                                </p>
+                                <a href="{% url 'jobsapp:jobs-detail' job.id %}" class="btn btn-sm btn-outline-primary rounded-pill">{% trans 'View Details' %}</a>
                             </div>
                         </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12 text-center">
+                        <p>{% trans 'No trending jobs available at the moment.' %}</p>
                     </div>
                 {% endfor %}
             </div>
         </div>
     </section>
-    {% if trendings %}
-        <section>
-            <div class="container">
-                <h4 class="heading">Trending this month</h4>
-                {% for trending in trendings %}
-                    <div class="job-listing  job-listing--last">
-                        <div class="row">
-                            <div class="col-md-12 col-lg-6">
-                                <div class="row">
-                                    <div class="col-2">
-                                        <img src="{% static 'img/company-1.png' %}"
-                                             alt="ShareBoardd " class="img-fluid">
-                                    </div>
-                                    <div class="col-10">
-                                        <h4 class="job__title">
-                                            <a href="{% url 'jobs:jobs-detail' trending.id %}">{{ trending.title }}</a>
-                                        </h4>
-                                        <p class="job__company">
-                                            {{ trending.company_name }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-10 col-md-3 col-lg-2 ml-auto"><i class="fa fa-map-marker job__location"></i>
-                                {{ trending.location }}
-                            </div>
-                            <div class="col-10 col-md-3 col-lg-3 ml-auto">
-                                <p>Posted {{ trending.created_at|timesince }}</p>
-                            </div>
-                            <div class="col-sm-12 col-md-2 col-lg-1">
-                                <div class="job__star">
-                                    <a href="#" data-toggle="tooltip" data-placement="top"
-                                       title="Save to favourites" class="job__star__link">
-                                        <i class="fa fa-star"></i>
-                                    </a>
-                                </div>
+
+    <!-- Latest Jobs Section -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-4">{% trans 'Latest Jobs' %}</h2>
+            <div class="row">
+                {% for job in jobs %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">{{ job.title }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    {% if job.company %}
+                                        <a href="{% url 'jobsapp:company_detail' pk=job.company.id %}">{{ job.company.name }}</a>
+                                    {% else %}
+                                        {% trans 'Unknown Company' %}
+                                    {% endif %}
+                                </h6>
+                                <p class="card-text"><i class="fa fa-map-marker"></i> {{ job.location }}</p>
+                                <p class="card-text small text-muted">{% trans 'Posted' %} {{ job.created_at|timesince }}</p>
+                                <p class="card-text">
+                                    {% if job.description|length > 150 %}
+                                        {{ job.description|truncatechars:150|safe }}
+                                    {% else %}
+                                        {{ job.description|safe }}
+                                    {% endif %}
+                                </p>
+                                <a href="{% url 'jobsapp:jobs-detail' job.id %}" class="btn btn-sm btn-primary rounded-pill">{% trans 'View Details' %}</a>
                             </div>
                         </div>
                     </div>
+                {% empty %}
+                    <div class="col-12 text-center">
+                        <p>{% trans 'No latest jobs available at the moment.' %}</p>
+                    </div>
                 {% endfor %}
             </div>
-        </section>
-    {% endif %}
-    <section class="section-divider">
-        <div class="overlay"></div>
+            <div class="text-center mt-4">
+                <a href="{% url 'jobsapp:jobs' %}" class="btn btn-lg btn-outline-primary rounded-pill">{% trans 'Browse All Jobs' %}</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="py-5 bg-light text-center">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <p>Start searching for your new job now! </p>
-                    <p><a href="{% url 'jobs:jobs' %}" class="btn btn-outline-light">See our job offers </a></p>
-                </div>
+            <h2 class="mb-3">{% trans 'About django-jobs' %}</h2>
+            <p class="lead">
+                {% trans 'Your premier platform for connecting talented professionals with outstanding career opportunities. We simplify the job search and hiring process for both job seekers and employers.' %}
+            </p>
+            <a href="{% url 'jobsapp:about-us' %}" class="btn btn-info rounded-pill">{% trans 'Learn More' %}</a>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="py-5 text-center">
+        <div class="container">
+            <h2 class="mb-3">{% trans 'Contact Us' %}</h2>
+            <p>
+                {% trans 'Email' %}: info@django-jobs.com<br>
+                {% trans 'Phone' %}: +123 456 7890
+            </p>
+            <div class="social-links mt-3">
+                <a href="#" class="mx-2 text-primary"><i class="fa fa-facebook fa-2x"></i></a>
+                <a href="#" class="mx-2 text-primary"><i class="fa fa-twitter fa-2x"></i></a>
+                <a href="#" class="mx-2 text-primary"><i class="fa fa-linkedin fa-2x"></i></a>
             </div>
         </div>
     </section>
 
 {% endblock %}
- 
+

@@ -1,5 +1,5 @@
 {% load static %}
-{% load static i18n %}
+{% load i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE }}">
@@ -13,10 +13,10 @@
     <meta name="robots" content="all,follow">
     <!-- Bootstrap CSS-->
     <link rel="stylesheet"
-          href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+            href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
     <!-- Font Awesome CSS-->
     <link rel="stylesheet"
-          href="{% static 'vendor/font-awesome/css/font-awesome.min.css' %}">
+            href="{% static 'vendor/font-awesome/css/font-awesome.min.css' %}">
     <!-- Google fonts - Roboto for copy, Montserrat for headings-->
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:300,400,700">
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Montserrat:400,700">
@@ -30,11 +30,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
     {% block styles %}{% endblock %}
     <!-- Favicon-->
-    <link rel="shortcut icon" href="favicon.png">
-<<<<<<< HEAD
+    <link rel="shortcut icon" href="{% static 'favicon.png' %}">
     <script src="{% static 'js/front.js' %}"></script>
-=======
->>>>>>> 22a1e464de6d88d694fc8d7e62562c2666c47c6b
     <!-- Tweaks for older IEs--><!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script><![endif]-->
@@ -45,7 +42,7 @@
 <header class="header">
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-            <a href="{% url 'jobs:home' %}" class="navbar-brand">
+            <a href="{% url 'jobsapp:home' %}" class="navbar-brand">
                 <img src="{% static 'img/logo-small.png' %}" alt="logo" class="d-none d-lg-block">
                 <span class="sr-only">Home</span>
             </a>
@@ -57,16 +54,16 @@
                 {% with request.resolver_match.url_name as url_name %}
                     <ul class="navbar-nav ml-auto">
                         <li class="nav-item {% if url_name == 'home' %}active{% endif %}">
-                            <a href="{% url 'jobs:home' %}" class="nav-link">Home <span class="sr-only">(current)</span></a>
+                            <a href="{% url 'jobsapp:home' %}" class="nav-link">Home <span class="sr-only">(current)</span></a>
                         </li>
                         <li class="nav-item {% if url_name == 'jobs' %}active{% endif %}">
-                            <a href="{% url 'jobs:jobs' %}" class="nav-link">Jobs</a>
+                            <a href="{% url 'jobsapp:jobs' %}" class="nav-link">Jobs</a>
                         </li>
                         <li class="nav-item {% if url_name == 'templates' %}active{% endif %}">
                             <a href="{% url 'resume_cv:templates' %}" class="nav-link">Create ResumeCV</a>
                         </li>
                         <li class="nav-item">
-                            <a href="/{{ LANGUAGE_CODE }}/about-us/" class="nav-link">About Us</a>
+                            <a href="{% url 'jobsapp:about-us' %}" class="nav-link">About Us</a> {# Changed from /{{ LANGUAGE_CODE }}/about-us/ to use url tag #}
                         </li>
                         {% if request.user.is_authenticated and request.user.role == 'employer' %}
                             <li class="nav-item dropdown">
@@ -87,17 +84,17 @@
                                     {% endif %}
                                 </a>
                                 <div aria-labelledby="clientZone" class="dropdown-menu">
-                                    <a href="{% url 'jobs:employer-dashboard' %}"
+                                    <a href="{% url 'jobsapp:employer-dashboard' %}"
                                        class="dropdown-item {% if url_name == 'employer-dashboard' %}active{% endif %}"
                                     >
                                         Dashboard
                                     </a>
-                                    <a href="{% url 'jobs:employer-all-applicants' %}"
+                                    <a href="{% url 'jobsapp:employer-all-applicants' %}"
                                        class="dropdown-item {% if url_name == 'employer-all-applicants' %}active{% endif %}"
                                     >
                                         Applicants
                                     </a>
-                                    <a href="{% url 'jobs:employer-jobs-create' %}"
+                                    <a href="{% url 'jobsapp:employer-jobs-create' %}"
                                        class="dropdown-item {% if url_name == 'employer-jobs-create' %}active{% endif %}"
                                     >
                                         Post a new job
@@ -107,10 +104,10 @@
                             </li>
                         {% elif request.user.is_authenticated and request.user.role == 'employee' %}
                             <li class="nav-item {% if url_name == 'employee-favorites' %}active{% endif %}">
-                                <a href="{% url 'jobs:employee-favorites' %}" class="nav-link">Favorites</a>
+                                <a href="{% url 'jobsapp:employee-favorites' %}" class="nav-link">Favorites</a>
                             </li>
                             <li class="nav-item {% if url_name == 'employee-my-applications' %}active{% endif %}">
-                                <a href="{% url 'jobs:employee-my-applications' %}" class="nav-link">My Applications</a>
+                                <a href="{% url 'jobsapp:employee-my-applications' %}" class="nav-link">My Applications</a>
                             </li>
 
                             <li class="nav-item dropdown">
@@ -183,7 +180,6 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            {#<li{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>{{ message }}</li>#}
         {% endfor %}
 
     {% endif %}
@@ -226,20 +222,20 @@
                 <div class="col-md-8 text-center text-md-right github-buttons">
                     <a href="https://github.com/manjurulhoque/django-job-portal" target="_blank" rel="noopener">
                         <img alt="stars"
-                             src="https://img.shields.io/github/stars/manjurulhoque/django-job-portal?style=social"/>
+                                src="https://img.shields.io/github/stars/manjurulhoque/django-job-portal?style=social"/>
                     </a>
                     <a href="https://github.com/manjurulhoque/django-job-portal" target="_blank" rel="noopener">
                         <img alt="forks"
-                             src="https://img.shields.io/github/forks/manjurulhoque/django-job-portal?style=social"/>
+                                src="https://img.shields.io/github/forks/manjurulhoque/django-job-portal?style=social"/>
                     </a>
                     <a href="https://github.com/manjurulhoque/django-job-portal/issues" target="_blank" rel="noopener">
                         <img alt="issues"
-                             src="https://img.shields.io/github/issues/manjurulhoque/django-job-portal?style=social"/>
+                                src="https://img.shields.io/github/issues/manjurulhoque/django-job-portal?style=social"/>
                     </a>
                     <a href="https://github.com/manjurulhoque/django-job-portal/#contributors-" target="_blank"
-                       rel="noopener">
+                        rel="noopener">
                         <img alt="translation"
-                             src="https://img.shields.io/badge/all_contributors-18-orange.svg?style=flat-square"/>
+                                src="https://img.shields.io/badge/all_contributors-18-orange.svg?style=flat-square"/>
                     </a>
                 </div>
             </div>

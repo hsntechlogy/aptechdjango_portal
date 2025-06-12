@@ -1,0 +1,62 @@
+{# D:\django-job-portal-master\templates\jobs\employee\apply_job_form.html #}
+
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% trans 'Apply for Job' %}: {{ job.title }}
+{% endblock %}
+
+{% block content %}
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <h1 class="heading text-center">{% trans 'Apply for' %} <span class="text-primary">{{ job.title }}</span></h1>
+        <p class="text-center text-muted">{% trans 'Please upload your resume/CV to apply for this position.' %}</p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card p-4 shadow-sm">
+                    {# IMPORTANT: enctype="multipart/form-data" is crucial for file uploads #}
+                    <form method="post" enctype="multipart/form-data"> 
+                        {% csrf_token %}
+                        
+                        {# Display non-field errors #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="form-group">
+                            <label for="{{ form.cv.id_for_label }}">{% trans 'Upload Resume/CV' %}</label>
+                            {{ form.cv }}
+                            {% if form.cv.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.cv.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.cv.help_text %}
+                                <small class="form-text text-muted">{{ form.cv.help_text }}</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">{% trans 'Submit Application' %}</button>
+                            <a href="{% url 'jobsapp:jobs-detail' job.id %}" class="btn btn-secondary btn-lg ml-2">{% trans 'Cancel' %}</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

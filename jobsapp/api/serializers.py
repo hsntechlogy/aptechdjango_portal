@@ -1,138 +1,100 @@
-    # D:\django-job-portal-master\jobsapp\api\serializers.py
+# D:\django-job-portal-master\jobsapp\api\serializers.py
 
 from rest_framework import serializers
-
-from accounts.models import CustomUser # Import CustomUser directly
-from django.contrib.auth import get_user_model
-
-from accounts.api.serializers import UserSerializer
-from tags.api.serializers import TagSerializer
-from categories.serializers import CategorySerializer # Corrected import path for CategorySerializer
-
-from ..models import Job, Applicant, Favorite # Models from jobsapp
-from jobs.models import Company # Company model from 'jobs' app
-from categories.models import Category # Category model from 'categories' app
-from tags.models import Tag # Tag model from 'tags' app
+from jobsapp.models import Job, Applicant, Favorite # Assuming these models are in jobsapp.models
+from accounts.models import CustomUser # Assuming CustomUser is your AUTH_USER_MODEL
+from jobs.models import Company, CompanyReview # Assuming Company and CompanyReview are in jobs.models
+from categories.models import Category # Assuming Category is in categories.models
+from tags.models import Tag # Assuming Tag is in tags.models
 
 
-User = get_user_model()
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ('id', 'name', 'description', 'website') # Include fields you want to expose
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('id', 'name')
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'name')
 
 
 class JobSerializer(serializers.ModelSerializer):
-        user = UserSerializer(read_only=True)
-        job_tags = serializers.SerializerMethodField()
-        company_name = serializers.CharField(source='company.name', read_only=True)
-        company_description = serializers.CharField(source='company.description', read_only=True)
-        website = serializers.URLField(source='company.website', read_only=True)
-        category = CategorySerializer(read_only=True)
+    # Nested serializers for related objects to provide more detail
+    company = CompanySerializer(read_only=True) # Read-only, automatically populated
+    category = CategorySerializer(read_only=True) # Read-only, automatically populated
+    tags = TagSerializer(many=True, read_only=True) # Many-to-many, read-only
+
+    # If you want to allow creating/updating jobs via API with company ID and category ID
+    company_id = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(), source='company', write_only=True, required=False
+    )
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source='category', write_only=True
+    )
+    tag_ids = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all()),
+        write_only=True, required=False, allow_empty=True
+    )
+
+    class Meta:
+        model = Job
+        fields = (
+            'id', 'title', 'location', 'salary', 'description', 
+            'type', 'vacancy', 'last_date', 'is_published', 'filled', 
+            'created_at', 'apply_url',
+            'company', 'category', 'tags', # Nested objects for read
+            'company_id', 'category_id', 'tag_ids' # IDs for write
+        )
+        read_only_fields = ('user', 'created_at') # User is set by the view
 
 
-        class Meta:
-            model = Job
-            fields = "__all__"
+    def create(self, validated_data):
+        tag_ids = validated_data.pop('tag_ids', [])
+        job = Job.objects.create(**validated_data)
+        if tag_ids:
+            job.tags.set(tag_ids)
+        return job
 
-        def get_job_tags(self, obj):
-            if obj.tags.exists():
-                return TagSerializer(obj.tags.all(), many=True).data
-            else:
-                return []
+    def update(self, instance, validated_data):
+        tag_ids = validated_data.pop('tag_ids', [])
+        
+        # Update fields that are not nested or M2M
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
 
-
-class DashboardJobSerializer(serializers.ModelSerializer):
-        user = UserSerializer(read_only=True)
-        job_tags = serializers.SerializerMethodField()
-        total_candidates = serializers.SerializerMethodField()
-        company_name = serializers.CharField(source='company.name', read_only=True)
-        company_description = serializers.CharField(source='company.description', read_only=True)
-        category = CategorySerializer(read_only=True)
-
-
-        class Meta:
-            model = Job
-            fields = "__all__"
-
-        def get_job_tags(self, obj):
-            if obj.tags.exists():
-                return TagSerializer(obj.tags.all(), many=True).data
-            else:
-                return []
-
-        def get_total_candidates(self, obj):
-            return obj.applicants.count()
-
-
-class NewJobSerializer(serializers.ModelSerializer):
-        user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), default=serializers.CurrentUserDefault())
-        company = serializers.PrimaryKeyRelatedField(queryset=Company.objects.all())
-        category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), allow_null=False) # Make category required
-        tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True, allow_empty=True)
-
-
-        class Meta:
-            model = Job
-            fields = (
-                'title', 'location', 'salary', 'description', 'company',
-                'category', 'tags', 'type', 'vacancy', 'last_date',
-                'is_published', 'filled', 'user'
-            )
-
-
-class ApplyJobSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Applicant
-            fields = ("job",)
-
-        def validate(self, attrs):
-            request_user = self.context.get("request", None).user
-            if not request_user.is_authenticated:
-                raise serializers.ValidationError("Authentication required to apply for jobs.")
-
-            if Applicant.objects.filter(user=request_user, job=attrs.get("job")).exists():
-                raise serializers.ValidationError("You have already applied to this job")
-            return attrs
+        if tag_ids:
+            instance.tags.set(tag_ids)
+        else:
+            instance.tags.clear() # Clear tags if none provided
+        
+        return instance
 
 
 class ApplicantSerializer(serializers.ModelSerializer):
-        applied_user = serializers.SerializerMethodField()
-        job = serializers.SerializerMethodField()
-        status = serializers.SerializerMethodField()
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    job_title = serializers.CharField(source='job.title', read_only=True)
+    cv_url = serializers.FileField(source='cv', read_only=True) # Expose CV URL
 
-        class Meta:
-            model = Applicant
-            fields = (
-                "id",
-                "job_id",
-                "applied_user",
-                "job",
-                "status",
-                "created_at",
-                "comment",
-            )
-
-        def get_status(self, obj):
-            return obj.get_status
-
-        def get_job(self, obj):
-            return JobSerializer(obj.job).data
-
-        def get_applied_user(self, obj):
-            return UserSerializer(obj.user).data
+    class Meta:
+        model = Applicant
+        fields = ('id', 'user', 'job', 'status', 'applied_at', 'cv', 'user_email', 'job_title', 'cv_url')
+        read_only_fields = ('user', 'job', 'applied_at') # User and job are set by the view
 
 
-class AppliedJobSerializer(serializers.ModelSerializer):
-        user = UserSerializer(read_only=True)
-        applicant = serializers.SerializerMethodField("_applicant")
+class FavoriteSerializer(serializers.ModelSerializer):
+    job_title = serializers.CharField(source='job.title', read_only=True)
+    job_location = serializers.CharField(source='job.location', read_only=True)
 
-        class Meta:
-            model = Job
-            fields = "__all__"
-
-        def _applicant(self, obj):
-            user = self.context.get("request", None).user
-            if user and user.is_authenticated:
-                try:
-                    return ApplicantSerializer(Applicant.objects.get(user=user, job=obj)).data
-                except Applicant.DoesNotExist:
-                    return None
-            return None
-    
+    class Meta:
+        model = Favorite
+        fields = ('id', 'user', 'job', 'soft_deleted', 'created_at', 'job_title', 'job_location')
+        read_only_fields = ('user', 'job', 'created_at')

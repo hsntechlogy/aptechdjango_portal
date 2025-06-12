@@ -1,0 +1,33 @@
+{# D:\django-job-portal-master\templates\notifications\create_notification.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% trans 'Create Notification' %}
+{% endblock %}
+
+{% block content %}
+<section class="bg-light-gray">
+    <div class="container">
+        <h1 class="heading">{% trans 'Create New Notification for Employees' %}</h1>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <form method="post" action="{% url 'notifications:create_notification' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="message">{% trans 'Notification Message' %}:</label>
+                        <input type="text" id="message" name="message_text" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">{% trans 'Send Notification' %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

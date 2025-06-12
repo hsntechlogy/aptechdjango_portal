@@ -1,132 +1,125 @@
-    {# D:\django-job-portal-master\templates\jobs\details.html #}
+{# D:\django-job-portal-master\templates\jobs\details.html #}
 
-    {% extends 'base.html' %}
-    {% load static %}
-    {% load is_already_applied %}
-    {% load humanize %}
-    {% block title %}
-        Job details
-    {% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% load is_already_applied %}
+{% load humanize %} 
+{% load i18n %} {# Ensure i18n is loaded for translations #}
 
-    {% block content %}
+{% block title %}
+    {% trans 'Job details' %}
+{% endblock %}
 
-        <section class="bg-light-gray">
-            <div class="container">
-                <h1 class="heading">{{ job.title }}<br>
-                    <small>at 
-                        {% if job.company %}
-                            <a href="{% url 'jobs:company_detail' pk=job.company.id %}"> {{ job.company.name }}</a>
-                        {% else %}
-                            Unknown Company
-                        {% endif %}
-                    </small>
-                </h1>
-                <div class="job-detail-description"><i class="fa fa-map-marker job__location"> </i>
-                    {{ job.location }} | Posted {{ job.created_at|timesince }} ({{ job.created_at }}) |
-                    {% if job.type == '1' %}
-                        <span class="badge featured-badge badge-success">Full time</span>
-                    {% elif job.type == '2' %}
-                        <span class="badge featured-badge badge-primary">Part time</span>
-                    {% else %}
-                        <span style="color: #ffffff;" class="badge featured-badge badge-warning">Internship</span>
-                    {% endif %}
+{% block content %}
+<section class="bg-light-gray py-4">
+    <div class="container">
+        <h1 class="heading display-4">{{ job.title }}<br>
+            <small>at 
+                {% if job.company %}
+                    <a href="{% url 'jobsapp:company_detail' pk=job.company.id %}">{{ job.company.name }}</a>
+                {% else %}
+                    {% trans 'Unknown Company' %}
+                {% endif %}
+            </small>
+        </h1>
+        <div class="job-detail-description">
+            <i class="fa fa-map-marker job__location"></i>
+            {{ job.location }} | {% trans 'Posted' %} {{ job.created_at|timesince }} ({{ job.created_at|date:"M d, Y, h:i a" }}) |
+            {% if job.type == '1' %}
+                <span class="badge featured-badge badge-success">{% trans 'Full time' %}</span>
+            {% elif job.type == '2' %}
+                <span class="badge featured-badge badge-primary">{% trans 'Part time' %}</span>
+            {% else %}
+                <span class="badge featured-badge badge-warning">{% trans 'Internship' %}</span>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <h3>{% trans 'Category' %}: {{ job.category.name|default:"N/A" }}</h3>
+                <h5>{% trans 'Last date' %}: {{ job.last_date|date }}</h5>
+                <h5 style="color: blueviolet;">{% trans 'Vacancy' %}: {{ job.vacancy }}</h5>
+                <h5 class="text-info">
+                    {% trans 'Salary' %}: {% if job.salary > 0 %} {{ job.salary | intcomma }}/Monthly {% else %} {% trans 'Negotiable' %} {% endif %}
+                </h5>
+
+                <div class="mb-4">
+                    <strong>{% trans 'Tags' %}:</strong>
+                    {% for tag in job.tags.all %}
+                        <span class="badge badge-secondary mr-1">{{ tag.name }}</span>
+                    {% empty %}
+                        <span class="text-muted">{% trans 'No tags listed.' %}</span>
+                    {% endfor %}
                 </div>
-            </div>
-        </section>
-        <section>
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <h3>Category: {{ job.category.name|default:"N/A" }}</h3> {# Access name property of category #}
-                        <h5>Last date: {{ job.last_date|date }}</h5>
-                        <h5 style="color: blueviolet;">Vacancy: {{ job.vacancy }}</h5>
-                        <h5 class="text-info">
-                            Salary: {% if job.salary > 0 %} {{ job.salary | intcomma }}/Monthly {% else %}
-                            Negotiable {% endif %}
-                        </h5>
-                        Tags:
-                        {% for tag in job.tags.all %}
-                            <span style="color: #ffffff;" class="badge featured-badge badge-secondary">{{ tag.name }}</span>
-                        {% endfor %}
-                        <blockquote class="blockquote">
-                            <p>{{ job.description | safe }}</p>
-                        </blockquote>
-                        <div class="job-detail__apply-bottom">
-                            {% if request.user.is_authenticated and request.user.role == 'employee' %}
-                                {% is_already_applied job request.user as is_applied %}
-                                {% if is_applied %}
-                                    <input type="button" class="btn btn-outline-white-primary" value="Already applied"/>
-                                {% else %}
-                                    <form action="{% url 'jobs:apply-job' job.id %}" method="post">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="job" value="{{ job.id }}">
-                                        <input type="submit" class="btn btn-outline-white-primary"
-                                               value="Apply for this job"/>
-                                    </form>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-lg-1"></div>
-                    <div class="col-lg-3">
-                        {% if job.company %}
-                            <h4>About {{ job.company.name }}</h4>
-                            <p class="job-detail__company-description">{{ job.company.description | default:"No description provided." | safe }}</p>
-                            <p class="job-detail__social social social--outline">
-                                {% if job.company.website %}
-                                    <a href="{{ job.company.website }}" data-toggle="tooltip" data-placement="top" title="Website"
-                                    class="link">
-                                        <i class="fa fa-link"></i>
-                                    </a>
-                                {% endif %}
-                                <a href="#" data-toggle="tooltip" data-placement="top" title="Twitter" class="twitter">
-                                    <i class="fa fa-twitter"></i>
-                                </a>
-                                <a href="#" data-toggle="tooltip" data-placement="top" title="Facebook" class="facebook">
-                                    <i class="fa fa-facebook"></i>
-                                </a>
-                            </p>
-                            {% if request.user.is_authenticated and request.user.role == 'employee' %}
-                                <p>
-                                    <a href="{% url 'jobs:add_review' company_id=job.company.id %}" class="btn btn-info mt-3">Add a Review</a>
-                                </p>
-                            {% endif %}
 
-                            {% if reviews %}
-                                <h5>Company Reviews:</h5>
-                                {% for review in reviews %}
-                                    <div class="card p-2 mb-2">
-                                        <strong>{{ review.user.get_full_name|default:review.user.email }}</strong> - Rating: {{ review.rating }}/5
-                                        <p>{{ review.comment }}</p>
-                                        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
-                                    </div>
-                                {% endfor %}
+                <blockquote class="blockquote mt-4 border-left pl-3">
+                    <p>{{ job.description|safe }}</p>
+                </blockquote>
+
+                {% if request.user.is_authenticated and request.user.role == 'employee' %}
+                    {% is_already_applied job request.user as is_applied %}
+                    <div class="job-detail__apply-bottom mt-4">
+                        {% if is_applied %}
+                            <button type="button" class="btn btn-outline-secondary" disabled>{% trans 'Already applied' %}</button>
+                        {% else %}
+                            {% if job.apply_url %}
+                                <a href="{{ job.apply_url }}" target="_blank" class="btn btn-primary">{% trans 'Apply on Company Website' %}</a>
                             {% else %}
-                                <p>No reviews yet.</p>
+                                <a href="{% url 'jobsapp:apply-job' job.id %}" class="btn btn-primary">{% trans 'Apply for this job' %}</a>
                             {% endif %}
-
-                        {% else %}
-                            <h4>Company information not available.</h4>
-                        {% endif %}
-
-                        {% if request.user.is_authenticated and request.user.role == 'employee' %}
-                            <div class="job-detail__apply-top">
-                                {% if is_applied %}
-                                    <input type="button" class="btn btn-outline-white-primary" value="Already applied"/>
-                                {% else %}
-                                    <form action="{% url 'jobs:apply-job' job.id %}" method="post">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="job" value="{{ job.id }}">
-                                        <input type="submit" class="btn btn-outline-white-primary"
-                                               value="Apply for this job"/>
-                                    </form>
-                                {% endif %}
-                            </div>
                         {% endif %}
                     </div>
-                </div>
+                {% endif %}
             </div>
-        </section>
 
-    {% endblock %}
-    
+            <div class="col-lg-1"></div>
+
+            <div class="col-lg-3">
+                {% if job.company %}
+                    <h4>{% trans 'About' %} {{ job.company.name }}</h4>
+                    <p>{{ job.company.description|default:"No description provided."|safe }}</p>
+
+                    <div class="job-detail__social social social--outline mb-3">
+                        {% if job.company.website %}
+                            <a href="{{ job.company.website }}" target="_blank" class="link" title="Website" data-toggle="tooltip">
+                                <i class="fa fa-link"></i>
+                            </a>
+                        {% endif %}
+                        <a href="#" title="Twitter"><i class="fa fa-twitter"></i></a>
+                        <a href="#" title="Facebook"><i class="fa fa-facebook"></i></a>
+                    </div>
+
+                    {% if request.user.is_authenticated and request.user.role == 'employee' %}
+                        <a href="{% url 'jobsapp:add_review' company_id=job.company.id %}" class="btn btn-info mb-3">{% trans 'Add a Review' %}</a>
+                    {% endif %}
+
+                    <h5 class="mt-4">{% trans 'Company Reviews' %}</h5>
+                    {% if reviews %} 
+                        <div class="company-reviews">
+                            {% for review in reviews %}
+                                <div class="card mb-2 p-2">
+                                    <strong>{{ review.user.get_full_name|default:review.user.email }}</strong>
+                                    <span> - 
+                                        {% for i in "12345"|slice:":review.rating" %}⭐{% endfor %}/5
+                                    </span>
+                                    <p class="mb-1">{{ review.comment }}</p>
+                                    <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>{% trans 'No reviews available.' %}</p>
+                    {% endif %}
+                {% else %}
+                    <h4>{% trans 'Company information not available.' %}</h4>
+                    <p>{% trans 'This job is not currently linked to a specific company profile, so reviews cannot be displayed here.' %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

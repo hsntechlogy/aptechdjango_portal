@@ -1,217 +1,251 @@
+{# D:\django-job-portal-master\templates\jobs\create.html #}
+
 {% extends 'base.html' %}
 {% load static %}
-{% load tag_exists %}
+{% load i18n %} {# Load i18n for translations #}
+
 {% block title %}
-    {{ title }}
+    {% if job_form.instance.pk %}
+        {% trans 'Update Job' %}
+    {% else %}
+        {% trans 'Create New Job' %}
+    {% endif %}
 {% endblock %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{% static 'vendor/bootstrap-select/css/bootstrap-select.min.css' %}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="{% static 'css/select2-bootstrap.css' %}"/>
+    {# Add any specific styles or include external CSS if needed #}
+    {# Ensure select2 CSS is loaded if you are using it for category/type fields #}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
-        .bootstrap-select .dropdown-menu a {
-            color: #000000;
+        .select2-container--default .select2-selection--single {
+            border-radius: 0.25rem;
+            border: 1px solid #ced4da;
+            height: calc(1.5em + 0.75rem + 2px);
+            padding: 0.375rem 0.75rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #888 transparent transparent transparent;
+            border-width: 5px 4px 0 4px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 1.5;
+            padding-left: 0; /* Remove default padding */
+        }
+        .select2-container .select2-selection--single .select2-selection__placeholder {
+            color: #6c757d; /* Placeholder color */
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + 0.75rem + 2px); /* Match input field height */
+        }
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: #007bff !important; /* Highlight color for selected item */
+            color: white;
         }
     </style>
 {% endblock %}
 
 {% block content %}
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <h1 class="heading text-center">
+            {% if job_form.instance.pk %}
+                {% trans 'Update Job' %}
+            {% else %}
+                {% trans 'Create New Job' %}
+            {% endif %}
+        </h1>
+        <p class="text-center text-muted">
+            {% if job_form.instance.pk %}
+                {% trans 'Modify the details of your job posting.' %}
+            {% else %}
+                {% trans 'Fill out the form below to post a new job.' %}
+            {% endif %}
+        </p>
+    </div>
+</section>
 
-    <section class="bg-light-gray">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <h1 class="heading">Add a new position</h1>
-                </div>
-            </div>
-        </div>
-    </section>
-    <section>
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-10 mx-auto">
-                    {# Displaying non-field errors (e.g., global form errors) #}
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger alert-dismissable">
-                            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-                            {% for error in form.non_field_errors %}
-                                <strong>{{ error|escape }}</strong>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    
-                    {# Displaying field-specific errors if any #}
-                    {% if form.errors %}
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <div class="alert alert-danger alert-dismissable">
-                                    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-                                    <strong>{{ field.label }}: {{ error|escape }}</strong>
-                                </div>
-                            {% endfor %}
-                        {% endfor %}
-                    {% endif %}
-                    <form id="job-main-form" method="post" action="" class="job-add-form">
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="card p-4 shadow-sm">
+                    {# IMPORTANT: enctype="multipart/form-data" if you add file uploads #}
+                    <form method="post"> 
                         {% csrf_token %}
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <h4>Job details</h4>
-                                <p class="text-muted text-small">Some additional info for this screen about validity of
-                                    the ads, etc. Pellentesque habitant morbi tristique senectus et netus et malesuada
-                                    fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget,
-                                    tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean
-                                    ultricies mi vitae est. Mauris placerat eleifend leo. Quisque sit amet est et sapien
-                                    ullamcorper pharetra. </p>
-                                <hr>
+                        
+                        {# Display non-field errors (e.g., from clean method) #}
+                        {% if job_form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in job_form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
                             </div>
-                        </div>
+                        {% endif %}
+
                         <div class="row">
-                            <div class="col-lg-12 form-group">
-                                <label for="title">Job Title</label>
-                                <input id="title" name="title" type="text" class="form-control"
-                                       value="{{ form.title.value|default_if_none:"" }}">
+                            {# Company Details Section #}
+                            <div class="col-md-6 mb-4">
+                                <h4 class="mb-3">{% trans 'Company Information' %}</h4>
+                                <div class="form-group">
+                                    <label for="{{ job_form.company_name.id_for_label }}">{% trans 'Company Name' %}</label>
+                                    {{ job_form.company_name }}
+                                    {% if job_form.company_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.company_name.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.company_description.id_for_label }}">{% trans 'Company Description' %}</label>
+                                    {{ job_form.company_description }}
+                                    {% if job_form.company_description.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.company_description.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.website.id_for_label }}">{% trans 'Company Website' %}</label>
+                                    {{ job_form.website }}
+                                    {% if job_form.website.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.website.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-12 form-group">
-                                <label for="description">Job Description</label>
-                                <textarea id="description" name="description" rows="5"
-                                          style="height: 200px"
-                                          class="form-control">{{ form.description.value|default_if_none:"" }}</textarea>
+
+                            {# Job Details Section #}
+                            <div class="col-md-6 mb-4">
+                                <h4 class="mb-3">{% trans 'Job Details' %}</h4>
+                                <div class="form-group">
+                                    <label for="{{ job_form.title.id_for_label }}">{% trans 'Job Title' %}</label>
+                                    {{ job_form.title }}
+                                    {% if job_form.title.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.title.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.location.id_for_label }}">{% trans 'Location' %}</label>
+                                    {{ job_form.location }}
+                                    {% if job_form.location.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.location.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.category.id_for_label }}">{% trans 'Category' %}</label>
+                                    {{ job_form.category }}
+                                    {% if job_form.category.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.category.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.type.id_for_label }}">{% trans 'Job Type' %}</label>
+                                    {{ job_form.type }}
+                                    {% if job_form.type.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.type.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.last_date.id_for_label }}">{% trans 'Last Date to Apply' %}</label>
+                                    {{ job_form.last_date }}
+                                    {% if job_form.last_date.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.last_date.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.vacancy.id_for_label }}">{% trans 'Vacancy' %}</label>
+                                    {{ job_form.vacancy }}
+                                    {% if job_form.vacancy.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.vacancy.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.salary.id_for_label }}">{% trans 'Salary (e.g., 50000 for monthly)' %}</label>
+                                    {{ job_form.salary }}
+                                    {% if job_form.salary.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.salary.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.apply_url.id_for_label }}">{% trans 'External Apply URL (Optional)' %}</label>
+                                    {{ job_form.apply_url }}
+                                    {% if job_form.apply_url.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.apply_url.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ job_form.apply_url.help_text }}</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.skills_input.id_for_label }}">{% trans 'Skills (comma-separated)' %}</label>
+                                    {{ job_form.skills_input }}
+                                    {% if job_form.skills_input.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.skills_input.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ job_form.skills_input.help_text }}</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ job_form.description.id_for_label }}">{% trans 'Job Description' %}</label>
+                                    {{ job_form.description }}
+                                    {% if job_form.description.errors %}
+                                        <div class="text-danger">
+                                            {% for error in job_form.description.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6 form-group">
-                                <label for="salary">Salary(Leave empty if it's negotiable)</label>
-                                <input id="salary" name="salary" type="number" min="1000" class="form-control"
-                                       value="{{ form.salary.value|default_if_none:"" }}">
-                            </div>
-                            <div class="col-lg-6 form-group">
-                                {# --- MODIFIED SECTION FOR SKILLS INPUT --- #}
-                                <label for="{{ form.skills_input.id_for_label }}">{{ form.skills_input.label }}</label>
-                                <input id="{{ form.skills_input.id_for_label }}" name="{{ form.skills_input.name }}" type="text"
-                                       class="form-control"
-                                       value="{{ form.skills_input.value|default_if_none:"" }}"
-                                       placeholder="{{ form.skills_input.field.widget.attrs.placeholder|default:"Enter skills" }}">
-                                {# Display any errors for the skills_input field #}
-                                {% if form.skills_input.errors %}
-                                    <ul class="text-red-500 text-xs italic">
-                                        {% for error in form.skills_input.errors %}
-                                            <li>{{ error }}</li>
-                                        {% endfor %}
-                                    </ul>
+                        </div> {# End row #}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                {% if job_form.instance.pk %}
+                                    {% trans 'Update Job' %}
+                                {% else %}
+                                    {% trans 'Post Job' %}
                                 {% endif %}
-                                {# --- END MODIFIED SECTION --- #}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6 form-group">
-                                <label for="location">Location</label>
-                                <input id="location" name="location" type="text" placeholder="e.g. Dhaka, Bangladesh"
-                                       class="form-control" value="{{ form.location.value|default_if_none:"" }}">
-                            </div>
-                            <div class="col-lg-6 form-group">
-                                <label for="type">Type</label>
-                                {# --- Render type field simply now that class is in forms.py --- #}
-                                {{ form.type }}
-                                {% if form.type.errors %}
-                                    <p class="text-red-500 text-xs italic mt-1">{{ form.type.errors }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6 form-group">
-                                <label for="category">Category</label>
-                                {# --- Render category field simply now that class is in forms.py --- #}
-                                {{ form.category }}
-                                {# Display any errors for the category field #}
-                                {% if form.category.errors %}
-                                    <p class="text-red-500 text-xs italic mt-1">{{ form.category.errors }}</p>
-                                {% endif %}
-                            </div>
-                            <div class="col-lg-6 form-group">
-                                <label for="vacancy">Vacancy: </label>
-                                <input id="vacancy" name="vacancy" type="number" min="1" class="form-control"
-                                       value="{{ form.vacancy.value | default_if_none:"" }}">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-xl-6 form-group">
-                                <label for="apply_url">Apply URL <span
-                                            class="note">(users will apply on your website)</span></label>
-                                <input id="apply_url" name="apply_url" type="url" class="form-control"
-                                       value="{{ form.apply_url.value|default_if_none:"" }}">
-                            </div>
-                            <div class="col-xl-6 form-group">
-                                <label for="validity">Validity of the post</label>
-                                <input id="validity" name="last_date" type="date" class="form-control"
-                                       value="{{ form.last_date.value|default_if_none:"" }}">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <hr class="margin-bottom--big">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <h4>Company details</h4>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-12 form-group">
-                                <label for="company_name">Company name</label>
-                                <input id="company_name" name="company_name" type="text" class="form-control"
-                                       value="{{ form.company_name.value|default_if_none:"" }}">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-12 form-group">
-                                <label for="company_description">Company Description</label>
-                                <textarea id="company_description" name="company_description" rows="3"
-                                          class="form-control">{{ form.company_description.value|default_if_none:"" }}</textarea>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-4 form-group">
-                                <label for="company_website">Website</label>
-                                <input id="company_website" name="website" type="url" class="form-control"
-                                       value="{{ form.website.value|default_if_none:"" }}">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-12 text-center">
-                                <hr>
-                                <button type="submit" class="btn btn-outline-white-primary"><i class="fa fa-magic"></i>
-                                    Save and publish
-                                </button>
-                            </div>
+                            </button>
+                            <a href="{% url 'jobsapp:employer-dashboard' %}" class="btn btn-secondary btn-lg ml-2">{% trans 'Cancel' %}</a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-    </section>
-
+    </div>
+</section>
 {% endblock %}
 
-{% block javascripts %}
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.2.0/tinymce.min.js"></script>
-    {# Removed select2.full.js as we are no longer using select2 for skills_input #}
-    {# <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.js"></script> #}
-
+{% block scripts %}
+    {# Initialize Select2 for category and type fields #}
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        $(document).ready(function () {
-            {# If you still use select2 for other fields like 'type' or 'category', keep this line: #}
-            $('.select2').select2(); // Changed from .js-select2 to .select2 for job type/category
+        $(document).ready(function() {
+            // Initialize Select2 for your category and type fields
+            $('#id_category').select2();
+            $('#id_type').select2();
 
-            tinymce.init({
-                selector: 'textarea',
-                toolbar: 'undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | outdent indent'
-            });
+            // If you are using TinyMCE for description, initialize it here
+            // tinymce.init({
+            //     selector: '#id_description',
+            //     plugins: 'advlist autolink lists link image charmap print preview anchor',
+            //     toolbar_mode: 'floating',
+            // });
         });
     </script>
-
 {% endblock %}

@@ -1,0 +1,38 @@
+{# D:\django-job-portal-master\templates\notifications\list.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% trans 'My Notifications' %}
+{% endblock %}
+
+{% block content %}
+<section class="bg-light-gray">
+    <div class="container">
+        <h1 class="heading">{% trans 'My Notifications' %}</h1>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                {% if notifications %}
+                    {% for note in notifications %}
+                        <div class="card mb-3 p-3">
+                            <p class="mb-1">{{ note.message }}</p>
+                            <small class="text-muted">{% trans 'Received' %} {{ note.created_at|date:"M d, Y, h:i a" }}</small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center">{% trans 'No notifications available.' %}</p>
+                {% endif %}
+
+                {# The "Add Notification" form was removed from here as it belongs to an admin-only view. #}
+                {# If you still need an admin interface to create notifications, we can create a separate template for it. #}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

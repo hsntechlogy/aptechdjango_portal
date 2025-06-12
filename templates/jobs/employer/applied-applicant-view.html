@@ -1,46 +1,64 @@
 {% extends 'base.html' %}
 {% block title %}
-    Applicants
+    Applicant: {{ applicant.user.get_full_name }}
 {% endblock %}
 {% load static %}
 {% block styles %}
 
+    {# PDF.js CSS - ensure it's loaded if you are using PDF.js viewer #}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf_viewer.css"/>
-    <link rel="stylesheet" href="{% static 'vendor/font-awesome/css/font-awesome.min.css' %}"/>
-
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-        }
-
+        /* Basic styling for PDF viewer controls */
         .top-bar {
             background: #333;
             color: #fff;
             padding: 1rem;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-bottom: 1rem; 
+            border-radius: 8px; 
         }
 
         .btn-pdf {
-            background: coral;
+            background: #007bff; 
             color: #fff;
             border: none;
             outline: none;
             cursor: pointer;
-            padding: 0.7rem 2rem;
+            padding: 0.7rem 1.5rem; 
+            border-radius: 5px; 
+            margin: 0 0.5rem; 
+            transition: background-color 0.3s ease; 
         }
 
         .btn-pdf:hover {
-            opacity: 0.9;
+            background-color: #0056b3; 
+            opacity: 1; 
         }
 
         .page-info {
             margin-left: 1rem;
+            font-weight: bold;
         }
 
         .error {
             background: orangered;
             color: #fff;
             padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+        }
+        canvas {
+            border: 1px solid #ddd; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            max-width: 100%; 
+            height: auto; 
+            display: block; 
+        }
+        .modal-footer .btn {
+            min-width: 80px; 
         }
     </style>
 
@@ -48,22 +66,24 @@
 
 {% block content %}
 
-    <section class="bg-light-gray">
+    <section class="bg-light-gray py-4"> 
         <div class="container">
             <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <h1 class="heading">{{ applicant.user.get_full_name }}</h1>
-                    <h6 class="heading">Applied for: {{ applicant.job.title }}</h6>
+                <div class="col-lg-8 mx-auto text-center"> 
+                    <h1 class="heading display-4 mb-2">{{ applicant.user.get_full_name }}</h1> 
+                    <h6 class="text-muted">Applied for: <strong class="text-primary">{{ applicant.job.title }}</strong></h6>
                 </div>
             </div>
         </div>
     </section>
-    <section>
+
+    <section class="py-5"> 
         <div class="container">
             <div class="row">
                 <div class="col-lg-8">
-                    {% if applicant.cv.name %}
-                        <div class="top-bar hidden">
+                    <h4 class="mb-3">Applicant's CV</h4>
+                    {% if applicant.cv and applicant.cv.name %} 
+                        <div class="top-bar">
                             <button class="btn btn-pdf" id="prev-page">
                                 <i class="fa fa-arrow-circle-left"></i> Prev Page
                             </button>
@@ -71,86 +91,214 @@
                                 Next Page <i class="fa fa-arrow-circle-right"></i>
                             </button>
                             <span class="page-info">
-                            Page <span id="page-num"></span> of <span id="page-count"></span>
-                        </span>
+                                Page <span id="page-num"></span> of <span id="page-count"></span>
+                            </span>
                         </div>
 
-                        <canvas id="pdf-render"></canvas>
+                        <canvas id="pdf-render" class="img-fluid"></canvas> 
+                        
+                        {# This JavaScript block should load PDF.js and render the CV #}
+                        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.min.js"></script>
+                        <script>
+                            // Set worker source for PDF.js
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.worker.min.js';
+
+                            const url = '{{ applicant.cv.url }}';
+
+                            let pdfDoc = null,
+                                pageNum = 1,
+                                pageIsRendering = false,
+                                pageNumIsPending = null;
+
+                            const scale = 1.5,
+                                canvas = document.querySelector('#pdf-render'),
+                                ctx = canvas.getContext('2d'); // Use get(0) for native DOM element with jQuery selector
+
+                            // Render the page
+                            const renderPage = num => {
+                                pageIsRendering = true;
+
+                                // Get page
+                                pdfDoc.getPage(num).then(page => {
+                                    const viewport = page.getViewport({ scale });
+                                    canvas.height = viewport.height;
+                                    canvas.width = viewport.width;
+
+                                    const renderCtx = {
+                                        canvasContext: ctx,
+                                        viewport
+                                    };
+
+                                    page.render(renderCtx).promise.then(() => {
+                                        pageIsRendering = false;
+
+                                        if (pageNumIsPending !== null) {
+                                            renderPage(pageNumIsPending);
+                                            pageNumIsPending = null;
+                                        }
+                                    });
+
+                                    // Output current page
+                                    document.querySelector('#page-num').textContent = num;
+                                });
+                            };
+
+                            // Check for pages rendering
+                            const queueRenderPage = num => {
+                                if (pageIsRendering) {
+                                    pageNumIsPending = num;
+                                } else {
+                                    renderPage(num);
+                                }
+                            };
+
+                            // Show Prev Page
+                            const showPrevPage = () => {
+                                if (pageNum <= 1) {
+                                    return;
+                                }
+                                pageNum--;
+                                queueRenderPage(pageNum);
+                            };
+
+                            // Show Next Page
+                            const showNextPage = () => {
+                                if (pageNum >= pdfDoc.numPages) {
+                                    return;
+                                }
+                                pageNum++;
+                                queueRenderPage(pageNum);
+                            };
+
+                            // Get Document
+                            pdfjsLib.getDocument(url).promise.then(pdfDoc_ => {
+                                pdfDoc = pdfDoc_;
+                                document.querySelector('#page-count').textContent = pdfDoc.numPages;
+                                renderPage(pageNum);
+                            }).catch(err => {
+                                console.error('Error loading PDF:', err);
+                                const div = document.createElement('div');
+                                div.className = 'error';
+                                div.appendChild(document.createTextNode('Error loading CV: ' + err.message));
+                                // Insert error message before the canvas
+                                document.querySelector('.col-lg-8').insertBefore(div, canvas);
+                                // Hide controls if PDF fails to load
+                                document.querySelector('.top-bar').style.display = 'none'; 
+                            });
+
+                            // Button Events using jQuery for event delegation (as you use jQuery in base.html)
+                            $(document).ready(function() {
+                                $('#prev-page').on('click', showPrevPage);
+                                $('#next-page').on('click', showNextPage);
+                            });
+                        </script>
                     {% else %}
-                        <h3>CV not available</h3>
+                        <div class="alert alert-warning text-center" role="alert">
+                            <h3>{% trans 'CV not available' %}</h3>
+                            <p>{% trans 'No resume/CV has been uploaded by this applicant.' %}</p>
+                        </div>
                     {% endif %}
                 </div>
+
                 <div class="col-lg-4">
-                    <h4>About: {{ applicant.user.get_full_name }}</h4>
-                    <h6>Skills:
-                        {% for tag in applicant.user.profile.tags.all %}
-                            <span style="color: #ffffff;"
-                                  class="badge featured-badge badge-secondary">{{ tag.name }}
-                            </span>
-                        {% endfor %}
-                    </h6>
-                    <h6>Gender: {{ applicant.user.gender }}</h6>
-                    <h6>Email: {{ applicant.user.email }}</h6>
-                    <h6 class="text-success">Status: {% if applicant.status == 1 %}
-                        Pending {% elif applicant.status == 2 %} Accepted {% elif applicant.status == 3 %}
-                        Rejected {% endif %}</h6>
-                    <p class="job-detail__company-description">{{ job.company_description }}</p>
-                    <p class="job-detail__social social social--outline">
-                        <a href="{{ job.website }}" data-toggle="tooltip" data-placement="top" title="Website"
-                           class="link">
-                            <i class="fa fa-link"></i>
-                        </a>
-                    </p>
-                    <input type="button" class="btn btn-outline-white-primary" {% if applicant.status != 1 %}
-                           disabled {% endif %} value="Send Response" data-toggle="modal"
-                           data-target="#myModal"/>
-                </div>
-                {% if applicant.status == 1 %}
-                    <div class="modal fade" id="myModal">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
+                    <div class="card p-4 shadow-sm"> 
+                        <h4 class="mb-3">{% trans 'Applicant Details' %}</h4>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><strong>{% trans 'Skills' %}:</strong>
+                                {% for tag in applicant.user.profile.tags.all %}
+                                    <span class="badge badge-secondary mr-1">{{ tag.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">{% trans 'No skills listed.' %}</span>
+                                {% endfor %}
+                            </li>
+                            <li class="mb-2"><strong>{% trans 'Gender' %}:</strong> {{ applicant.user.gender|default:"N/A" }}</li>
+                            <li class="mb-2"><strong>{% trans 'Email' %}:</strong> <a href="mailto:{{ applicant.user.email }}">{{ applicant.user.email }}</a></li>
+                            <li class="mb-2"><strong>{% trans 'Status' %}:</strong> 
+                                {% if applicant.status == 1 %}
+                                    <span class="badge badge-warning">{% trans 'Pending' %}</span>
+                                {% elif applicant.status == 2 %}
+                                    <span class="badge badge-success">{% trans 'Accepted' %}</span>
+                                {% elif applicant.status == 3 %}
+                                    <span class="badge badge-danger">{% trans 'Rejected' %}</span>
+                                {% else %}
+                                    <span class="badge badge-info">{% trans 'Unknown' %}</span>
+                                {% endif %}
+                            </li>
+                        </ul>
 
-                                <div class="modal-header">
-                                    <h4 class="modal-title">Send response</h4>
-                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                </div>
-
-                                <form action="{% url 'jobs:applicant-send-response' applicant.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <div class="modal-body">
-                                        <input type="hidden" name="job_id" value="{{ applicant.job.id }}">
-                                        <div class="form-group">
-                                            <label for="status">Status</label>
-                                            <select id="status" name="status" class="form-control">
-                                                <option value="2" {% if applicant.status == 2 %} selected
-                                                        disabled {% endif %}>
-                                                    Accepted
-                                                </option>
-                                                <option value="3" {% if applicant.status == 3 %} selected
-                                                        disabled {% endif %}>
-                                                    Rejected
-                                                </option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="Comment">Comment</label>
-                                            <textarea id="Comment" name="comment" rows="3" required
-                                                      class="form-control">{{ applicant.comment|default_if_none:"" }}</textarea>
-                                        </div>
-                                    </div>
-
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                                        <input type="submit" class="btn btn-success" value="Send"/>
-                                    </div>
-                                </form>
-
+                        <hr>
+                        <h5 class="mt-4 mb-3">{% trans 'About Company' %}</h5>
+                        {% if applicant.job.company %}
+                            <p class="text-muted">{{ applicant.job.company.description|default_if_none:"No company description provided." }}</p>
+                            <div class="social social--outline mb-3">
+                                {% if applicant.job.company.website %}
+                                    <a href="{{ applicant.job.company.website }}" target="_blank" class="link" title="Company Website" data-toggle="tooltip">
+                                        <i class="fa fa-link"></i>
+                                    </a>
+                                {% endif %}
+                                {# Static social links - consider making them dynamic or remove if not functional #}
+                                <a href="#" title="Twitter"><i class="fa fa-twitter"></i></a>
+                                <a href="#" title="Facebook"><i class="fa fa-facebook"></i></a>
                             </div>
-                        </div>
+                        {% else %}
+                            <p class="text-muted">{% trans 'Company information not available for this job.' %}</p>
+                        {% endif %}
+
+                        <hr>
+                        {# Send Response button - it opens the modal #}
+                        <button type="button" class="btn btn-outline-primary btn-block mt-3" 
+                                {% if applicant.status != 1 %}disabled{% endif %} 
+                                data-toggle="modal" data-target="#sendResponseModal">
+                            {% trans 'Send Response' %}
+                        </button>
                     </div>
-                {% endif %}
+                </div>
             </div>
         </div>
     </section>
+
+    {# The modal definition #}
+    {% if applicant.status == 1 %} {# Only render modal if status is pending #}
+        <div class="modal fade" id="sendResponseModal" tabindex="-1" role="dialog" aria-labelledby="sendResponseModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="sendResponseModalLabel">{% trans 'Send Response to' %} {{ applicant.user.get_full_name }}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <form action="{% url 'jobsapp:applicant-send-response' applicant.id %}" method="POST">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="statusSelect">{% trans 'Update Status' %}:</label>
+                                <select id="statusSelect" name="status" class="form-control">
+                                    <option value="2" {% if applicant.status == 2 %} selected disabled {% endif %}>
+                                        {% trans 'Accepted' %}
+                                    </option>
+                                    <option value="3" {% if applicant.status == 3 %} selected disabled {% endif %}>
+                                        {% trans 'Rejected' %}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="messageText">{% trans 'Message to Applicant' %}:</label>
+                                <textarea id="messageText" name="message_text" rows="5" class="form-control" placeholder="{% trans 'Type your response here...' %}" required></textarea>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans 'Close' %}</button>
+                            <button type="submit" class="btn btn-success">{% trans 'Send Response' %}</button> 
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
 {% endblock %}

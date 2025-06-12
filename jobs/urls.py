@@ -1,76 +1,86 @@
-from django.urls import re_path
-from django.conf import settings
-from django.conf.urls.i18n import i18n_patterns
+# D:\django-job-portal-master\jobs\urls.py
+# THIS IS NOW YOUR PROJECT'S MAIN URLS.PY FILE (ROOT_URLCONF)
+
 from django.contrib import admin
-from django.contrib.flatpages import views as flatpages_views
-from django.contrib.sitemaps.views import sitemap
-from django.urls import include, path
-from django.conf.urls.static import static
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
-from django.views.decorators.csrf import csrf_exempt
-from graphene_file_upload.django import FileUploadGraphQLView
+from django.urls import path, include, re_path 
+from django.conf import settings 
+from django.conf.urls.static import static 
+from django.conf.urls.i18n import i18n_patterns 
+from drf_yasg import openapi 
+from drf_yasg.views import get_schema_view 
+from rest_framework import permissions 
+from django.views.decorators.csrf import csrf_exempt 
+from graphene_file_upload.django import FileUploadGraphQLView 
+from  views import *
+from . import views  # Import views from the current directory (jobsapp.views)
+# Import views directly from jobsapp.views (the monolithic file)
+from jobsapp import views as jobsapp_views
 
 
-from . import views
-from jobs.sitemaps import Sitemaps, StaticViewSitemap
-from resume_cv.views import load_builder, update_builder
-
+# Schema view for Swagger/Redoc API documentation
 schema_view = get_schema_view(
-        openapi.Info(
-            title="Jobs Portal API",
-            default_version="v1",
-            description="Jobs Portal Api Description",
-            terms_of_service="https://www.google.com/policies/terms/",
-            contact=openapi.Contact(email="contact@snippets.local"),
-            license=openapi.License(name="BSD License"),
-        ),
-        public=True,
-        permission_classes=(permissions.AllowAny,),
-    )
+    openapi.Info(
+        title="Jobs Portal API",
+        default_version="v1",
+        description="Jobs Portal Api Description",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="contact@snippets.local"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 
+
+# Internationalization patterns: URLs that should be translated
 lang_patterns = i18n_patterns(
-        # <<< FIX: Explicitly define the namespace for jobsapp.urls >>>
-        path("", include("jobsapp.urls", namespace="jobsapp")), 
-        path("", include("accounts.urls")),
-        path("", include("resume_cv.urls")),
-    )
+    path("", include("jobsapp.urls", namespace="jobsapp")), # Main job-related app
+    path("accounts/", include("accounts.urls")), # User accounts and auth
+    path("notifications/", include("notifications.urls")), # User notifications
+    path("categories/", include("categories.urls")), # Job categories
+    path("tags/", include("tags.urls")), # Re-adding tags.urls as it might have been there
+    path("resume-cv/", include("resume_cv.urls")), # Resume builder
+    path('companies/', views.company_list, name='company_list'),
+    path('companies/<int:company_id>/', views.company_detail, name='company_detail'),
+)
 
-    # sitemaps = {
-    #     '': JobViewSitemap
-    # }
+# Main URL patterns (this will be the urlpatterns list for your entire project)
+urlpatterns = lang_patterns + [ 
+    re_path(r"^i18n/", include("django.conf.urls.i18n")), 
 
-urlpatterns = lang_patterns + [
-        re_path(r"^i18n/", include("django.conf.urls.i18n")),
-        path("admin/", admin.site.urls),
-        path("templates/load-builder/<id>", load_builder, name="resume-cv.load.builder"),
-        path("templates/update-builder/<id>", csrf_exempt(update_builder), name="resume-cv.update.builder"),
-        path('company/<int:company_id>/add_review/', views.add_review, name='add_review'),
+    path("admin/", admin.site.urls), 
 
-        path(
-            "api/",
-            include(
-                [
-                    path("swagger", schema_view.with_ui("swagger", cache_timeout=0)),
-                    path("", include("accounts.api.urls")),
-                    path("", include("jobsapp.api.urls")),
-                    path("", include("tags.api.urls")),
-                    path("", include("categories.urls")),
-                    # path('auth/oauth/', include('rest_framework_social_oauth2.urls'))
-                ]
-            ),
+    # API documentation and endpoints
+    path(
+        "api/",
+        include(
+            [
+                path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"), 
+                path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"), 
+                path("accounts/", include("accounts.api.urls")), 
+                path("jobsapp/", include("jobsapp.api.urls")), 
+                path("tags/", include("tags.api.urls")), 
+                path("categories/", include("categories.api.urls")), # Re-adding this if it existed then
+            ]
         ),
-        path("social-auth/", include("social_django.urls", namespace="social")),
-        # url(r"^(?P<url>.*/)$", flatpages_views.flatpage),
-        path("sitemap.xml/", sitemap, {"sitemaps": dict(Sitemaps())}, name="django.contrib.sitemaps.views.sitemap"),
-        path("graphql/", csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
-    ]
+    ),
+    path("social-auth/", include("social_django.urls", namespace="social")), 
+]
 
-if settings.ENABLE_PROMETHEUS:
-        urlpatterns.append(path("", include("django_prometheus.urls")))
+# Assign custom error handlers - these MUST be at the top level of the ROOT_URLCONF
+# They reference functions in jobsapp.views (the monolithic file)
+handler400 = jobsapp_views.custom_bad_request_view
+handler403 = jobsapp_views.custom_permission_denied_view
+handler404 = jobsapp_views.custom_page_not_found_view
+handler500 = jobsapp_views.custom_server_error_view
 
-if bool(settings.DEBUG):
-        urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-        urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    
+
+# Prometheus metrics (if ENABLE_PROMETHEUS is True in settings)
+if hasattr(settings, 'ENABLE_PROMETHEUS') and settings.ENABLE_PROMETHEUS:
+    urlpatterns.append(path("prometheus/", include("django_prometheus.urls"))) 
+
+# Serve static and media files ONLY in development (DEBUG=True)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+

@@ -1,0 +1,62 @@
+{# D:\django-job-portal-master\templates\accounts\employee_profile_update.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% trans 'Update Employee Profile' %}
+{% endblock %}
+
+{% block content %}
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <h1 class="heading text-center">{% trans 'Update Your Employee Profile' %}</h1>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card p-4 shadow-sm">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {# Display non-field errors #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {# Loop through form fields for rendering #}
+                        {% for field in form %}
+                            <div class="form-group">
+                                {{ field.label_tag }}
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger">
+                                        {% for error in field.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">{% trans 'Update Profile' %}</button>
+                            <a href="{% url 'jobsapp:home' %}" class="btn btn-secondary btn-lg ml-2">{% trans 'Cancel' %}</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

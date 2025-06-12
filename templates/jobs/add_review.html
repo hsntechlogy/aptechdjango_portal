@@ -3,15 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Company Reviews</title>
 </head>
 <body>
-    <form method="post">
-    {% csrf_token %}
-    <label>Rating:</label><input type="number" name="rating" min="1" max="5">
-    <textarea name="comment"></textarea>
-    <button type="submit">Submit</button>
-</form>
+    <h2>Company Reviews</h2>
 
+    {% if company.companyreview_set.exists %}
+        {% for review in company.companyreview_set.all %}
+            <p><strong>{{ review.user.username }}</strong> - ⭐{{ review.rating }}<br>{{ review.comment }}</p>
+        {% endfor %}
+    {% else %}
+        <p>No reviews available.</p>
+    {% endif %}
+
+    <hr>
+    <h3>Add a Review</h3>
+    <form method="post" action="{% url 'jobs:add_review' company.id %}">
+        {% csrf_token %}
+        <label for="rating">Rating (1-5):</label>
+        <input type="number" name="rating" min="1" max="5" required><br>
+
+        <label for="comment">Comment:</label><br>
+        <textarea name="comment" rows="4" required></textarea><br>
+
+        <button type="submit">Submit Review</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
 </body>
 </html>

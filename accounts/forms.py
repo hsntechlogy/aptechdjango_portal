@@ -1,179 +1,207 @@
-from django import forms
-from django.contrib.auth import authenticate
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from django.contrib.auth import get_user_model # <--- Import this!
-
-from accounts.models import CustomUser
-
-GENDER_CHOICES = (("male", "Male"), ("female", "Female"))
-
-
-class EmployeeRegistrationForm(UserCreationForm):
-    # gender = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=GENDER_CHOICES)
-    first_name = forms.CharField(required=True)
-    last_name = forms.CharField(required=True)
-
-    def __init__(self, *args, **kwargs):
-        super(EmployeeRegistrationForm, self).__init__(*args, **kwargs)
-        self.fields["gender"].required = True
-        self.fields["first_name"].label = "First Name"
-        self.fields["last_name"].label = "Last Name"
-        self.fields["password1"].label = "Password"
-        self.fields["password2"].label = "Confirm Password"
-
-        # self.fields['gender'].widget = forms.CheckboxInput()
-
-        self.fields["first_name"].widget.attrs.update({"placeholder": "Enter First Name"})
-        self.fields["last_name"].widget.attrs.update({"placeholder": "Enter Last Name"})
-        self.fields["email"].widget.attrs.update({"placeholder": "Enter Email"})
-        self.fields["password1"].widget.attrs.update({"placeholder": "Enter Password"})
-        self.fields["password2"].widget.attrs.update({"placeholder": "Confirm Password"})
-
-    class Meta:
-        model = CustomUser
-        fields = ["first_name", "last_name", "email", "password1", "password2", "gender"]
-        error_messages = {
-            "first_name": {"required": "First name is required", "max_length": "Name is too long"},
-            "last_name": {"required": "Last name is required", "max_length": "Last Name is too long"},
-            "gender": {"required": "Gender is required"},
-        }
-
-    def clean_gender(self):
-        gender = self.cleaned_data.get("gender")
-        if not gender:
-            raise forms.ValidationError("Gender is required")
-        return gender
-
-    def save(self, commit=True):
-        user = super(UserCreationForm, self).save(commit=False)
-        user.role = "employee"
-        if commit:
-            user.save()
-        return user
-
-
-class EmployerRegistrationForm(UserCreationForm):
-    first_name = forms.CharField(required=True)
-    last_name = forms.CharField(required=True)
-
-    def __init__(self, *args, **kwargs):
-        super(EmployerRegistrationForm, self).__init__(*args, **kwargs)
-        self.fields["first_name"].label = "Company Name"
-        self.fields["last_name"].label = "Company Address"
-        self.fields["password1"].label = "Password"
-        self.fields["password2"].label = "Confirm Password"
-
-        self.fields["first_name"].widget.attrs.update({"placeholder": "Enter Company Name"})
-        self.fields["last_name"].widget.attrs.update({"placeholder": "Enter Company Address"})
-        self.fields["email"].widget.attrs.update({"placeholder": "Enter Email"})
-        self.fields["password1"].widget.attrs.update({"placeholder": "Enter Password"})
-        self.fields["password2"].widget.attrs.update({"placeholder": "Confirm Password"})
-
-    class Meta:
-        model = CustomUser
-        fields = ["first_name", "last_name", "email", "password1", "password2"]
-        error_messages = {
-            "first_name": {"required": "First name is required", "max_length": "Name is too long"},
-            "last_name": {"required": "Last name is required", "max_length": "Last Name is too long"},
-        }
-
-    def save(self, commit=True):
-        user = super(UserCreationForm, self).save(commit=False)
-        user.role = "employer"
-        if commit:
-            user.save()
-        return user
-
-
-class UserLoginForm(forms.Form):
-    email = forms.EmailField()
-    password = forms.CharField(label="Password", strip=False, widget=forms.PasswordInput)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.user = None
-        self.fields["email"].widget.attrs.update({"placeholder": "Enter Email"})
-        self.fields["password"].widget.attrs.update({"placeholder": "Enter Password"})
-
-    def clean(self, *args, **kwargs):
-        email = self.cleaned_data.get("email")
-        password = self.cleaned_data.get("password")
-
-        if email and password:
-            self.user = authenticate(email=email, password=password)
-
-            if self.user is None:
-                raise forms.ValidationError("User Does Not Exist.")
-            if not self.user.check_password(password):
-                raise forms.ValidationError("Password Does not Match.")
-            if not self.user.is_active:
-                raise forms.ValidationError("User is not Active.")
-
-        return super(UserLoginForm, self).clean(*args, **kwargs)
-
-    def get_user(self):
-        return self.user
-
-
-class EmployeeProfileUpdateForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(EmployeeProfileUpdateForm, self).__init__(*args, **kwargs)
-        self.fields["first_name"].widget.attrs.update({"placeholder": "Enter First Name"})
-        self.fields["last_name"].widget.attrs.update({"placeholder": "Enter Last Name"})
-
-    class Meta:
-        model = CustomUser
-        fields = ["first_name", "last_name", "gender"]
-
-
-class EmployerProfileUpdateForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(EmployerProfileUpdateForm, self).__init__(*args, **kwargs)
-        self.fields["first_name"].widget.attrs["placeholder"] = "Company name"
-        self.fields["last_name"].widget.attrs["placeholder"] = "Company address"
-        self.fields["first_name"].label = "Company name"
-        self.fields["last_name"].label = "Company address"
-
-    class Meta:
-        model = CustomUser
-        fields = ["first_name", "last_name"]
-# Get the custom user model
-CustomUser = get_user_model()
-
 # D:\django-job-portal-master\accounts\forms.py
 
+from django import forms
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import AuthenticationForm, UserChangeForm 
+from django.contrib.auth.forms import UserCreationForm as AuthUserCreationForm # Renamed to avoid clash
 
-CustomUser = get_user_model()
+from django.utils.translation import gettext_lazy as _ 
 
-class CustomUserCreationForm(UserCreationForm):
-    # Add the 'role' field explicitly as it's required and not part of default UserCreationForm fields
-    # You might want to make this a ChoiceField if 'role' has predefined options
-    role = forms.CharField(max_length=12, required=True, label="Role (e.g., employee, company)")
+from jobs.models import Company # Required for EmployerProfileForm to interact with Company model
 
-    class Meta(UserCreationForm.Meta):
-        model = CustomUser
-        # Include 'email' (USERNAME_FIELD) and 'role'
-        # Do NOT include 'is_active' here, as it's handled by default=False in model and set on verification
-        fields = ('email', 'role',) # Only these fields for creation, password handled by UserCreationForm
+User = get_user_model()
+
+# Define GENDER_CHOICES directly in forms.py to avoid model loading issues
+GENDER_CHOICES = (
+    ('male', _('Male')),
+    ('female', _('Female')),
+    ('other', _('Other')),
+    ('prefer_not_to_say', _('Prefer not to say')),
+)
+
+
+# --- Registration Forms (inheriting from forms.ModelForm) ---
+
+class RegisterEmployeeForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label=_("Password"))
+    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label=_("Confirm Password"))
+
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'gender') 
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'gender': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("This email is already registered.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        password2 = cleaned_data.get("password2")
+
+        if password and password2 and password != password2:
+            self.add_error('password2', _("Passwords don't match"))
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.role = self.cleaned_data['role'] # Assign the role from the form
-        user.is_active = False # Explicitly set to False (already default in model, but good to be sure)
+        user.set_password(self.cleaned_data["password"]) # Hash the password
+        user.role = 'employee'
+        user.username = self.cleaned_data['email'] # Assign email to username field
         if commit:
             user.save()
         return user
 
-class CustomUserChangeForm(UserChangeForm):
+
+class RegisterEmployerForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label=_("Password"))
+    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label=_("Confirm Password"))
+
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email') 
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("This email is already registered.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        password2 = cleaned_data.get("password2")
+
+        if password and password2 and password != password2:
+            self.add_error('password2', _("Passwords don't match"))
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password"]) # Hash the password
+        user.role = 'employer'
+        user.username = self.cleaned_data['email'] # Assign email to username field
+        if commit:
+            user.save()
+        return user
+
+
+# --- Authentication Form ---
+class LoginAuthenticationForm(AuthenticationForm): 
+    username = forms.CharField(
+        label=_("Email"),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your Email'})
+    )
+    password = forms.CharField(
+        label=_("Password"),
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'})
+    )
+
+
+# --- Admin-Specific Forms for CustomUser ---
+class CustomUserCreationForm(AuthUserCreationForm): # Inherits from Django's UserCreationForm
+    class Meta(AuthUserCreationForm.Meta):
+        model = User
+        fields = ('email', 'first_name', 'last_name', 'gender', 'role', 'is_company', 'is_admin',)
+        field_classes = {'username': forms.CharField} 
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        if self._meta.model.objects.filter(username=username).exists():
+            raise forms.ValidationError(_("A user with that username already exists."))
+        return username
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if not user.username:
+            user.username = user.email 
+        if commit:
+            user.save()
+        return user
+
+
+class CustomUserChangeForm(UserChangeForm): # Inherits from Django's UserChangeForm
     class Meta(UserChangeForm.Meta):
-        model = CustomUser
-        fields = (
-            'email',
-            'role',
-            'gender',
-            'is_active',
-            'is_staff',
-            'is_superuser',
-            'is_company',
-            'is_admin',
-        )
+        model = User
+        fields = ('email', 'first_name', 'last_name', 'gender', 'role', 'is_company', 'is_admin', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions',)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs['readonly'] = True
+
+
+# --- Employee Profile Update Form (for regular users) ---
+class EmployeeProfileForm(forms.ModelForm):
+    class Meta:
+        model = User 
+        fields = ['first_name', 'last_name', 'gender'] 
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'gender': forms.Select(attrs={'class': 'form-control'}), 
+        }
+
+
+# --- Employer Profile Update Form (for regular users, not admin) ---
+class EmployerProfileForm(forms.ModelForm):
+    first_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    last_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    company_name = forms.CharField(label="Company Name", max_length=255, required=True, 
+                                   widget=forms.TextInput(attrs={'class': 'form-control'}))
+    company_description = forms.CharField(label="Company Description", widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}), required=False)
+    website = forms.URLField(label="Company Website", required=False, 
+                             widget=forms.URLInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email'] 
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'readonly': True}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.role == 'employer':
+            if hasattr(self.instance, 'company_profile') and self.instance.company_profile: 
+                company = self.instance.company_profile 
+                self.fields['company_name'].initial = company.name
+                self.fields['company_description'].initial = company.description
+                self.fields['website'].initial = company.website
+            else: 
+                self.fields['company_name'].initial = ''
+                self.fields['company_description'].initial = ''
+                self.fields['website'].initial = ''
+        
+        self.fields['email'].widget.attrs.update({'class': 'form-control'})
+
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        company_name = self.cleaned_data.pop('company_name')
+        company_description = self.cleaned_data.pop('company_description')
+        website = self.cleaned_data.pop('website')
+
+        if commit:
+            user.save() 
+            
+            company, created = Company.objects.get_or_create(user=user)
+            company.name = company_name
+            company.description = company_description
+            company.website = website
+            company.save() 
+        return user
+

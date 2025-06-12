@@ -1,28 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    {% for review in company.companyreview_set.all %}
-  <p>{{ review.user.username }} - ⭐{{ review.rating }}<br>{{ review.comment }}</p>
-{% endfor %}
-    {% if not company.companyreview_set.all %}
-  <p>No reviews available.</p>
-{% endif %}
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %} {# Added for potential trans tags if needed #}
+{% block title %}
+    Company Details: {{ company.name }}
+{% endblock %}
 
-    <form method="post">
-        {% csrf_token %}
-        <label>Rating:</label>
-        <input type="number" name="rating" min="1" max="5" required>
-        <textarea name="comment" required></textarea>
-        <button type="submit">Submit Review</button>
-    </form>
+{% block content %}
+    <section class="bg-light-gray">
+        <div class="container">
+            <h1 class="heading">{{ company.name }}<br>
+                <small>{% trans 'Company Profile' %}</small>
+            </h1>
+            <div class="job-detail-description">
+                {% if company.website %}
+                    <i class="fa fa-globe"></i> <a href="{{ company.website }}" target="_blank">{{ company.website }}</a>
+                {% endif %}
+                {# Add other company info like address, if available in your model #}
+            </div>
+        </div>
+    </section>
 
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-</body>
-</html>
+    <section>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h4>{% trans 'About' %} {{ company.name }}</h4>
+                    <p>{{ company.description|default:"No description provided."|safe }}</p>
+
+                    <hr>
+
+                    <h4>{% trans 'Jobs Posted by' %} {{ company.name }}</h4>
+                    {% if jobs_by_company %}
+                        {% for job in jobs_by_company %}
+                            <div class="job-listing job-listing--last">
+                                <div class="row">
+                                    <div class="col-md-12 col-lg-6">
+                                        <h4 class="job__title">
+                                            <a href="{% url 'jobsapp:jobs-detail' job.id %}">{{ job.title }}</a>
+                                        </h4>
+                                        <p class="job__company">{{ job.location }}</p>
+                                    </div>
+                                    <div class="col-md-12 col-lg-6 text-right">
+                                        <p class="job__date">Posted {{ job.created_at|timesince }} ago</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>{% trans 'No jobs currently posted by this company.' %}</p>
+                    {% endif %}
+                </div>
+
+                <div class="col-lg-4">
+                    {# Display Company Reviews Section #}
+                    <h4>{% trans 'Company Reviews' %}</h4>
+                    {% if reviews %} {# 'reviews' context variable is correctly passed from CompanyDetailView #}
+                        {% for review in reviews %}
+                            <div class="card p-3 mb-3">
+                                <strong>{{ review.user.get_full_name|default:review.user.email }}</strong> - ⭐{{ review.rating }}/5
+                                <p>{{ review.comment }}</p>
+                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>{% trans 'No reviews available.' %}</p>
+                    {% endif %}
+
+                    {# Review Submission Form #}
+                    {% if request.user.is_authenticated and request.user.role == 'employee' %}
+                        <hr>
+                        <h4>{% trans 'Add a Review' %}</h4>
+                        <form method="post" action="{% url 'jobsapp:add_review' company_id=company.id %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="rating">{% trans 'Rating' %}:</label>
+                                <input type="number" name="rating" id="rating" min="1" max="5" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="comment">{% trans 'Comment' %}:</label>
+                                <textarea name="comment" id="comment" rows="5" class="form-control" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-3">{% trans 'Submit Review' %}</button>
+                        </form>
+                        {% if error %} {# Assuming 'error' will be passed from the view on invalid form #}
+                            <p style="color: red;" class="mt-2">{{ error }}</p>
+                        {% endif %}
+                    {% elif not request.user.is_authenticated %}
+                        <p class="mt-3">{% trans 'Please' %} <a href="{% url 'accounts:login' %}">{% trans 'log in' %}</a> {% trans 'to add a review.' %}</p>
+                    {% else %} {# User is authenticated but not an employee (e.g., employer, admin) #}
+                        <p class="mt-3">{% trans 'Only employees can add reviews.' %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
