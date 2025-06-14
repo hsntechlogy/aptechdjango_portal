@@ -10,16 +10,15 @@ from django.utils.decorators import method_decorator
 from .models import OTPVerification, CustomUser 
 from django.conf import settings 
 from django.contrib.auth.decorators import user_passes_test, login_required 
-from notifications.models import Notification 
+# from notifications.models import Notification # Removed as Notification logic moved
 from django.contrib.auth.backends import ModelBackend 
 from django.urls import reverse_lazy 
 from django.utils import timezone 
 
-# Corrected form import names to match accounts/forms.py
 from accounts.forms import (
     RegisterEmployeeForm,      
     RegisterEmployerForm,      
-    LoginAuthenticationForm,   
+    LoginAuthenticationForm,  
     EmployeeProfileForm, 
     EmployerProfileForm 
 )
@@ -254,21 +253,15 @@ class EmployerProfileEditView(UpdateView):
         return super().form_valid(form)
 
 
-# --- Admin Dashboard and Notifications (Original functions) ---
-@user_passes_test(lambda u: u.is_admin) 
+# --- Admin Dashboard (if still used) ---
+@user_passes_test(lambda u: u.is_staff) # Ensure this is correct for your admin user
 @login_required 
 def admin_dashboard(request):
     return render(request, 'accounts/admin_dashboard.html') 
 
-
-@login_required 
-def notifications(request):
-    notes = Notification.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'accounts/notifications.html', {'notifications': notes}) 
-
+# Removed notifications function, it's now in notifications/views.py
 
 # --- Placeholder Error Handler Views ---
-# These views are directly callable from jobs/urls.py (the ROOT_URLCONF)
 def custom_bad_request_view(request, exception=None): 
     """400 Bad Request error handler."""
     return render(request, 'errors/400.html', {'exception': exception}, status=400)

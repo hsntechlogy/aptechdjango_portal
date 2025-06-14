@@ -1,69 +1,105 @@
+{# D:\django-job-portal-master\templates\jobs\search.html #}
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
+{% load humanize %}
+
 {% block title %}
-    All jobs
+    {% trans 'Search Results' %}
 {% endblock %}
 
 {% block content %}
-
-    <section class="job-form-section job-form-section--compressed">
-        <div class="container">
-            <h4 class="heading">Find a <span class="accent">job </span> you will <span class="accent">love</span></h4>
-            <form id="job-main-form" method="get" action="#" class="job-main-form">
-                <div class="controls">
-                    <div class="row align-items-end">
-                        <div class="col-sm-1 col-lg-2"></div>
-                        <div class="col-sm-5 col-lg-4 form-group">
-                            <label for="profession">Position</label>
-                            <input type="text" id="position" name="position"
-                                   placeholder="Position you are looking for" class="form-control">
-                        </div>
-                        <div class="col-sm-5 col-lg-4 form-group">
-                            <label for="location">Location</label>
-                            <input type="text" id="location" name="location" placeholder="Any particular location?"
-                                   value="" class="form-control">
-                        </div>
-                        <div class="col-sm-1 col-lg-2 form-group">
-                            <button type="submit" name="name"
-                                    class="btn btn-outline-white-primary job-main-form__button">
-                                <i class="fa fa-search"></i>
-                            </button>
-                        </div>
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <h1 class="heading text-center">{% trans 'Job Search' %}</h1>
+        <p class="text-center text-muted">{% trans 'Find the perfect job for you.' %}</p>
+        <form action="{% url 'jobsapp:search' %}" method="GET" class="job-main-form mt-4">
+            <div class="controls">
+                <div class="row align-items-end">
+                    <div class="col-md-4 form-group">
+                        <label for="id_position">{% trans 'Job Title / Keyword' %}</label>
+                        <input type="text" id="id_position" name="position"
+                               placeholder="{% trans 'e.g., Software Engineer, Marketing' %}" 
+                               value="{{ selected_position }}" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="id_location">{% trans 'Location' %}</label>
+                        <input type="text" id="id_location" name="location" 
+                               placeholder="{% trans 'e.g., New York, Remote' %}"
+                               value="{{ selected_location }}" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="id_category">{% trans 'Category' %}</label>
+                        <select name="category" id="id_category" class="form-control">
+                            <option value="">{% trans 'All Categories' %}</option>
+                            {% for category in categories %}
+                                <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
-            </form>
-        </div>
-    </section>
-    <section>
-        <div class="container">
-            <h3 class="heading">We have found <span class="accent">{{ jobs.count }}</span> jobs</h3>
+                <div class="row align-items-end mt-3">
+                    <div class="col-md-8 form-group">
+                        <label for="id_tag">{% trans 'Tags' %}</label>
+                        <input type="text" id="id_tag" name="tag"
+                               placeholder="{% trans 'e.g., Python, Django, Frontend' %}" 
+                               value="{{ selected_tag }}" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group text-right">
+                        <button type="submit" class="btn btn-primary btn-lg mt-3">
+                            <i class="fa fa-search"></i> {% trans 'Search' %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <h3 class="heading mb-4">{% trans 'Found' %} <span class="accent">{{ jobs.count }}</span> {% trans 'matching jobs' %}</h3>
+        {% if jobs %}
             {% for job in jobs %}
-                <div class="job-listing  ">
-                    <div class="row">
-                        <div class="col-md-12 col-lg-6">
-                            <div class="row">
-                                <div class="col-2">
-                                    <img src="{% static 'img/company-1.png' %}"
-                                         alt="Ipsioou " class="img-fluid">
-                                </div>
-                                <div class="col-10">
-                                    <h4 class="job__title"><a
-                                            href="{% url 'jobs:jobs-detail' job.id %}">{{ job.title }}</a></h4>
-                                    <p class="job__company">
-                                        {{ job.company_name }}
-                                    </p>
-                                </div>
+                <div class="job-listing d-flex flex-wrap align-items-center mb-4 p-4 shadow-sm rounded">
+                    <div class="col-lg-8">
+                        <h4 class="job__title mb-1"><a href="{% url 'jobsapp:jobs-detail' job.id %}" class="text-dark">{{ job.title }}</a></h4>
+                        <p class="job__company text-muted mb-2">
+                            {% if job.company %}
+                                <a href="{% url 'jobsapp:company_detail' pk=job.company.id %}">{{ job.company.name }}</a>
+                            {% else %}
+                                {% trans 'Unknown Company' %}
+                            {% endif %}
+                        </p>
+                        <ul class="list-inline text-sm mb-0">
+                            <li class="list-inline-item mr-3"><i class="fa fa-map-marker mr-1 text-primary"></i>{{ job.location }}</li>
+                            <li class="list-inline-item mr-3"><i class="fa fa-money mr-1 text-primary"></i>
+                                {% if job.salary and job.salary > 0 %}
+                                    ${{ job.salary | intcomma }}/{% trans 'Monthly' %}
+                                {% else %}
+                                    {% trans 'Negotiable' %}
+                                {% endif %}
+                            </li>
+                            <li class="list-inline-item"><i class="fa fa-clock-o mr-1 text-primary"></i>{{ job.get_job_type_display }}</li>
+                        </ul>
+                        {% if job.tags.exists %}
+                            <div class="mt-2">
+                                {% for tag in job.tags.all %}
+                                    <span class="badge badge-secondary mr-1">{{ tag.name }}</span>
+                                {% endfor %}
                             </div>
-                        </div>
-                        <div class="col-10 col-md-3 col-lg-2 ml-auto"><i class="fa fa-map-marker job__location"></i>
-                            {{ job.location }}
-                        </div>
-                        <div class="col-10 col-md-3 col-lg-3 ml-auto">
-                            <p>Posted {{ job.created_at|timesince }}</p>
-                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-4 text-right">
+                        <p class="text-muted mb-2">{% trans 'Posted' %} {{ job.created_at|timesince }} {% trans 'ago' %}</p>
+                        <a href="{% url 'jobsapp:jobs-detail' job.id %}" class="btn btn-primary rounded-pill">{% trans 'View Details' %}</a>
                     </div>
                 </div>
             {% endfor %}
+
+            {# Pagination for search results #}
             {% if is_paginated %}
                 <div class="row">
                     <div class="col-md-12">
@@ -71,7 +107,7 @@
                             <ul class="pagination">
                                 {% if page_obj.has_previous %}
                                     <li class="page-item">
-                                        <a href="?page={{ page_obj.previous_page_number }}"
+                                        <a href="?page={{ page_obj.previous_page_number }}&position={{ selected_position }}&location={{ selected_location }}&category={{ selected_category }}&tag={{ selected_tag }}"
                                            class="page-link">&laquo;</a>
                                     </li>
                                 {% else %}
@@ -80,19 +116,15 @@
                                     </li>
                                 {% endif %}
                                 {% for i in page_obj.paginator.page_range %}
-                                    {% if page_obj.number == i %}
-                                        <li class="page-item active">
-                                            <a class="page-link">{{ i }}</a>
-                                        </li>
-                                    {% else %}
-                                        <li class="page-item">
-                                            <a href="?page={{ i }}" class="page-link">{{ i }}</a>
-                                        </li>
-                                    {% endif %}
+                                    <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                                        <a href="?page={{ i }}&position={{ selected_position }}&location={{ selected_location }}&category={{ selected_category }}&tag={{ selected_tag }}" 
+                                           class="page-link">{{ i }}</a>
+                                    </li>
                                 {% endfor %}
                                 {% if page_obj.has_next %}
                                     <li class="page-item">
-                                        <a href="?page={{ page_obj.next_page_number }}" class="page-link">&raquo;</a>
+                                        <a href="?page={{ page_obj.next_page_number }}&position={{ selected_position }}&location={{ selected_location }}&category={{ selected_category }}&tag={{ selected_tag }}" 
+                                           class="page-link">&raquo;</a>
                                     </li>
                                 {% else %}
                                     <li class="page-item disabled">
@@ -104,7 +136,12 @@
                     </div>
                 </div>
             {% endif %}
-        </div>
-    </section>
 
+        {% else %}
+            <div class="alert alert-info text-center mt-4">
+                {% trans 'No jobs found matching your search criteria.' %}
+            </div>
+        {% endif %}
+    </div>
+</section>
 {% endblock %}

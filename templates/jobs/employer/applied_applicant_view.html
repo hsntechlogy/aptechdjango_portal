@@ -1,10 +1,14 @@
+{# D:\django-job-portal-master\templates\jobs\employer\applied_applicant_view.html #}
 {% extends 'base.html' %}
-{% block title %}
-    Applicant: {{ applicant.user.get_full_name }}
-{% endblock %}
 {% load static %}
-{% block styles %}
+{% load i18n %}
+{% load humanize %}
 
+{% block title %}
+    {% trans 'Applicant Details' %} - {{ applicant.user.get_full_name|default:applicant.user.email }}
+{% endblock %}
+
+{% block styles %}
     {# PDF.js CSS - ensure it's loaded if you are using PDF.js viewer #}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf_viewer.css"/>
     
@@ -71,7 +75,7 @@
             <div class="row">
                 <div class="col-lg-8 mx-auto text-center"> 
                     <h1 class="heading display-4 mb-2">{{ applicant.user.get_full_name }}</h1> 
-                    <h6 class="text-muted">Applied for: <strong class="text-primary">{{ applicant.job.title }}</strong></h6>
+                    <h6 class="text-muted">{% trans 'Applied for' %}: <strong class="text-primary">{{ applicant.job.title }}</strong></h6>
                 </div>
             </div>
         </div>
@@ -81,17 +85,17 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-8">
-                    <h4 class="mb-3">Applicant's CV</h4>
+                    <h4 class="mb-3">{% trans 'Applicant\'s CV' %}</h4>
                     {% if applicant.cv and applicant.cv.name %} 
                         <div class="top-bar">
                             <button class="btn btn-pdf" id="prev-page">
-                                <i class="fa fa-arrow-circle-left"></i> Prev Page
+                                <i class="fa fa-arrow-circle-left"></i> {% trans 'Prev Page' %}
                             </button>
                             <button class="btn btn-pdf" id="next-page">
-                                Next Page <i class="fa fa-arrow-circle-right"></i>
+                                {% trans 'Next Page' %} <i class="fa fa-arrow-circle-right"></i>
                             </button>
                             <span class="page-info">
-                                Page <span id="page-num"></span> of <span id="page-count"></span>
+                                {% trans 'Page' %} <span id="page-num"></span> {% trans 'of' %} <span id="page-count"></span>
                             </span>
                         </div>
 
@@ -112,7 +116,7 @@
 
                             const scale = 1.5,
                                 canvas = document.querySelector('#pdf-render'),
-                                ctx = canvas.getContext('2d'); // Use get(0) for native DOM element with jQuery selector
+                                ctx = canvas.getContext('2d');
 
                             // Render the page
                             const renderPage = num => {
@@ -195,7 +199,7 @@
                     {% else %}
                         <div class="alert alert-warning text-center" role="alert">
                             <h3>{% trans 'CV not available' %}</h3>
-                            <p>{% trans 'No resume/CV has been uploaded by this applicant.' %}</p>
+                            <p>{% trans 'The applicant did not upload a CV.' %}</p>
                         </div>
                     {% endif %}
                 </div>
@@ -214,11 +218,23 @@
                             <li class="mb-2"><strong>{% trans 'Gender' %}:</strong> {{ applicant.user.gender|default:"N/A" }}</li>
                             <li class="mb-2"><strong>{% trans 'Email' %}:</strong> <a href="mailto:{{ applicant.user.email }}">{{ applicant.user.email }}</a></li>
                             <li class="mb-2"><strong>{% trans 'Status' %}:</strong> 
-                                {% if applicant.status == 1 %}
+                                {% comment %} 
+                                    STATUS_CHOICES from jobsapp/models.py/Applicant:
+                                    (0, _('Pending')),
+                                    (1, _('Reviewed')),
+                                    (2, _('Interview Scheduled')),
+                                    (3, _('Accepted')),
+                                    (4, _('Rejected')),
+                                {% endcomment %}
+                                {% if applicant.status == 0 %} 
                                     <span class="badge badge-warning">{% trans 'Pending' %}</span>
-                                {% elif applicant.status == 2 %}
+                                {% elif applicant.status == 1 %} 
+                                    <span class="badge badge-info">{% trans 'Reviewed' %}</span>
+                                {% elif applicant.status == 2 %} 
+                                    <span class="badge badge-primary">{% trans 'Interview Scheduled' %}</span>
+                                {% elif applicant.status == 3 %} 
                                     <span class="badge badge-success">{% trans 'Accepted' %}</span>
-                                {% elif applicant.status == 3 %}
+                                {% elif applicant.status == 4 %} 
                                     <span class="badge badge-danger">{% trans 'Rejected' %}</span>
                                 {% else %}
                                     <span class="badge badge-info">{% trans 'Unknown' %}</span>
@@ -239,6 +255,7 @@
                                 {# Static social links - consider making them dynamic or remove if not functional #}
                                 <a href="#" title="Twitter"><i class="fa fa-twitter"></i></a>
                                 <a href="#" title="Facebook"><i class="fa fa-facebook"></i></a>
+                                <a href="#" title="Linkedin"><i class="fa fa-linkedin"></i></a>
                             </div>
                         {% else %}
                             <p class="text-muted">{% trans 'Company information not available for this job.' %}</p>
@@ -246,8 +263,9 @@
 
                         <hr>
                         {# Send Response button - it opens the modal #}
+                        {# Disable if applicant status is already Accepted or Rejected #}
                         <button type="button" class="btn btn-outline-primary btn-block mt-3" 
-                                {% if applicant.status != 1 %}disabled{% endif %} 
+                                {% if applicant.status == 3 or applicant.status == 4 %}disabled{% endif %} 
                                 data-toggle="modal" data-target="#sendResponseModal">
                             {% trans 'Send Response' %}
                         </button>
@@ -258,7 +276,8 @@
     </section>
 
     {# The modal definition #}
-    {% if applicant.status == 1 %} {# Only render modal if status is pending #}
+    {# Only render modal if status is not Accepted or Rejected #}
+    {% if applicant.status != 3 and applicant.status != 4 %} 
         <div class="modal fade" id="sendResponseModal" tabindex="-1" role="dialog" aria-labelledby="sendResponseModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -270,18 +289,17 @@
                         </button>
                     </div>
 
-                    <form action="{% url 'jobsapp:applicant-send-response' applicant.id %}" method="POST">
+                    <form action="{% url 'jobsapp:send-response' applicant_id=applicant.id %}" method="POST">
                         {% csrf_token %}
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="statusSelect">{% trans 'Update Status' %}:</label>
                                 <select id="statusSelect" name="status" class="form-control">
-                                    <option value="2" {% if applicant.status == 2 %} selected disabled {% endif %}>
-                                        {% trans 'Accepted' %}
-                                    </option>
-                                    <option value="3" {% if applicant.status == 3 %} selected disabled {% endif %}>
-                                        {% trans 'Rejected' %}
-                                    </option>
+                                    {# CRITICAL FIX: Aligned options with Applicant.STATUS_CHOICES #}
+                                    <option value="1" {% if applicant.status == 1 %} selected {% endif %}>{% trans 'Reviewed' %}</option>
+                                    <option value="2" {% if applicant.status == 2 %} selected {% endif %}>{% trans 'Interview Scheduled' %}</option>
+                                    <option value="3" {% if applicant.status == 3 %} selected {% endif %}>{% trans 'Accepted' %}</option>
+                                    <option value="4" {% if applicant.status == 4 %} selected {% endif %}>{% trans 'Rejected' %}</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -301,4 +319,10 @@
         </div>
     {% endif %}
 
+{% endblock %}
+
+{% block javascripts %}
+    {{ block.super }}
+    {# Any specific JS for this page can go here #}
+    {# If you have a custom PDF viewer library (e.g., PDF.js), its integration would go here. #}
 {% endblock %}

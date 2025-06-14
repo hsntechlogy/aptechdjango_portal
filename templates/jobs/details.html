@@ -4,7 +4,7 @@
 {% load static %}
 {% load is_already_applied %}
 {% load humanize %} 
-{% load i18n %} {# Ensure i18n is loaded for translations #}
+{% load i18n %}
 
 {% block title %}
     {% trans 'Job details' %}
@@ -25,9 +25,9 @@
         <div class="job-detail-description">
             <i class="fa fa-map-marker job__location"></i>
             {{ job.location }} | {% trans 'Posted' %} {{ job.created_at|timesince }} ({{ job.created_at|date:"M d, Y, h:i a" }}) |
-            {% if job.type == '1' %}
+            {% if job.job_type == '1' %}
                 <span class="badge featured-badge badge-success">{% trans 'Full time' %}</span>
-            {% elif job.type == '2' %}
+            {% elif job.job_type == '2' %}
                 <span class="badge featured-badge badge-primary">{% trans 'Part time' %}</span>
             {% else %}
                 <span class="badge featured-badge badge-warning">{% trans 'Internship' %}</span>
@@ -43,9 +43,6 @@
                 <h3>{% trans 'Category' %}: {{ job.category.name|default:"N/A" }}</h3>
                 <h5>{% trans 'Last date' %}: {{ job.last_date|date }}</h5>
                 <h5 style="color: blueviolet;">{% trans 'Vacancy' %}: {{ job.vacancy }}</h5>
-                <h5 class="text-info">
-                    {% trans 'Salary' %}: {% if job.salary > 0 %} {{ job.salary | intcomma }}/Monthly {% else %} {% trans 'Negotiable' %} {% endif %}
-                </h5>
 
                 <div class="mb-4">
                     <strong>{% trans 'Tags' %}:</strong>
@@ -55,6 +52,10 @@
                         <span class="text-muted">{% trans 'No tags listed.' %}</span>
                     {% endfor %}
                 </div>
+
+                <h5 class="text-info">
+                    {% trans 'Salary' %}: {% if job.salary > 0 %} {{ job.salary | intcomma }}/Monthly {% else %} {% trans 'Negotiable' %} {% endif %}
+                </h5>
 
                 <blockquote class="blockquote mt-4 border-left pl-3">
                     <p>{{ job.description|safe }}</p>

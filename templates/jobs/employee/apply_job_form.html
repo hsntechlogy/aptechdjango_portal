@@ -1,54 +1,54 @@
 {# D:\django-job-portal-master\templates\jobs\employee\apply_job_form.html #}
-
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
 
 {% block title %}
-    {% trans 'Apply for Job' %}: {{ job.title }}
+    {% trans 'Apply for Job' %} - {{ job.title }}
 {% endblock %}
 
 {% block content %}
 <section class="bg-light-gray py-5">
     <div class="container">
-        <h1 class="heading text-center">{% trans 'Apply for' %} <span class="text-primary">{{ job.title }}</span></h1>
-        <p class="text-center text-muted">{% trans 'Please upload your resume/CV to apply for this position.' %}</p>
+        <h1 class="heading text-center">{% trans 'Apply for Job' %}</h1>
+        <p class="text-center text-muted">{% trans 'Submit your application for:' %} <strong>{{ job.title }}</strong></p>
     </div>
 </section>
 
 <section class="py-5">
     <div class="container">
         <div class="row">
-            <div class="col-lg-8 mx-auto">
+            <div class="col-lg-6 mx-auto">
                 <div class="card p-4 shadow-sm">
-                    {# IMPORTANT: enctype="multipart/form-data" is crucial for file uploads #}
-                    <form method="post" enctype="multipart/form-data"> 
-                        {% csrf_token %}
-                        
-                        {# Display non-field errors #}
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger">
-                                {% for error in form.non_field_errors %}
-                                    {{ error }}
-                                {% endfor %}
+                    <h4 class="mb-4 text-center">{% trans 'Upload Your Resume/CV' %}</h4>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
-                        {% endif %}
+                        {% endfor %}
+                    {% endif %}
 
-                        <div class="form-group">
-                            <label for="{{ form.cv.id_for_label }}">{% trans 'Upload Resume/CV' %}</label>
-                            {{ form.cv }}
-                            {% if form.cv.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.cv.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            {% if form.cv.help_text %}
-                                <small class="form-text text-muted">{{ form.cv.help_text }}</small>
-                            {% endif %}
-                        </div>
-
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger">
+                                        {% for error in field.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
                         <div class="text-center mt-4">
                             <button type="submit" class="btn btn-primary btn-lg">{% trans 'Submit Application' %}</button>
                             <a href="{% url 'jobsapp:jobs-detail' job.id %}" class="btn btn-secondary btn-lg ml-2">{% trans 'Cancel' %}</a>

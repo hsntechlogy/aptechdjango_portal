@@ -5,7 +5,7 @@ import graphene
 import graphql_jwt
 from graphene_django.debug import DjangoDebug
 
-from jobs.settings import GRAPHQL_JWT
+from django_job_portal.settings import GRAPHQL_JWT
 from jobsapp.graphql import queries as jobs_queries
 from accounts.graphql import mutations as auth_mutations
 from jobsapp.graphql import mutations as job_mutation

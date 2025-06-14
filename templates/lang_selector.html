@@ -1,12 +1,10 @@
+{# D:\django-job-portal-master\templates\lang_selector.html #}
 {% load i18n %}
-{% get_available_languages as languages %}
-{% get_current_language as LANGUAGE_CODE %}
 
 <li class="nav-item dropdown">
-    <a href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-       class="nav-link dropdown-toggle has-img mb-3 mb-lg-0 mt-3 mt-lg-0">
-        <em class="fa fa-language"></em>
-        {% trans "Language" %}
+    <a id="clientZone" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+       class="nav-link dropdown-toggle">
+        <i class="fa fa-globe"></i> {% trans 'Language' %}
     </a>
 
     <form action="{% url 'set_language' %}" method="post" id="change-language-form">
@@ -17,7 +15,8 @@
     <div aria-labelledby="clientZone" class="dropdown-menu">
         {% for lang_code, lang_name in languages %}
             {% language lang_code %}
-                <a href="{% url "jobs:home" %}" data-lang-code="{{ lang_code }}" class="dropdown-item">{{ lang_name }}</a>
+                {# CRITICAL FIX: Changed "jobs:home" to "jobsapp:home" #}
+                <a href="{% url "jobsapp:home" %}" data-lang-code="{{ lang_code }}" class="dropdown-item">{{ lang_name }}</a>
             {% endlanguage %}
         {% endfor %}
     </div>

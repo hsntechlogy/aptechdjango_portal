@@ -1,0 +1,96 @@
+{# D:\django-job-portal-master\templates\jobs\employer\job_form.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if form.instance.pk %} {# Changed job_form to form #}
+        {% trans 'Edit Job Posting' %} - {{ form.instance.title }} {# Changed job_form to form #}
+    {% else %}
+        {% trans 'Post New Job' %}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <h1 class="heading text-center">
+            {% if form.instance.pk %} {# Changed job_form to form #}
+                {% trans 'Edit Job Posting' %}
+            {% else %}
+                {% trans 'Post New Job' %}
+            {% endif %}
+        </h1>
+        <p class="text-center text-muted">
+            {% if form.instance.pk %} {# Changed job_form to form #}
+                {% trans 'Make changes to your existing job advertisement.' %}
+            {% else %}
+                {% trans 'Fill out the form below to create a new job opening.' %}
+            {% endif %}
+        </p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card p-4 shadow-sm">
+                    <h4 class="mb-4 text-center">{% trans 'Job Details' %}</h4>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% for field in form %} {# CRITICAL FIX: Changed job_form to form #}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger">
+                                        {% for error in field.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                {% if form.instance.pk %} {# Changed job_form to form #}
+                                    {% trans 'Update Job' %}
+                                {% else %}
+                                    {% trans 'Post Job' %}
+                                {% endif %}
+                            </button>
+                            {% if form.instance.pk %} {# Changed job_form to form #}
+                                <a href="{% url 'jobsapp:employer-dashboard' %}" class="btn btn-secondary btn-lg ml-2">{% trans 'Cancel' %}</a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<script>
+    $(document).ready(function() {
+        $('.select2').select2(); // Initialize Select2 on elements with class 'select2'
+    });
+</script>
+{% endblock scripts %}

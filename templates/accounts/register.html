@@ -1,0 +1,64 @@
+{# D:\django-job-portal-master\templates\accounts\register.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if title %}{{ title }}{% else %}{% trans 'Register' %}{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <h1 class="heading text-center">{% if title %}{{ title }}{% else %}{% trans 'Register' %}{% endif %}</h1>
+        <p class="text-center text-muted">{% trans 'Create your account to start finding or posting jobs.' %}</p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 mx-auto">
+                <div class="card p-4 shadow-sm">
+                    <h4 class="mb-4 text-center">{% trans 'New Account' %}</h4>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger">
+                                        {% for error in field.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">{% trans 'Register' %}</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p>{% trans 'Already have an account?' %} <a href="{% url 'accounts:login' %}">{% trans 'Login Here' %}</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

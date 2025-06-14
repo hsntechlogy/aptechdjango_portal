@@ -1,62 +1,41 @@
+# D:\django-job-portal-master\notifications\views.py
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages # Import messages for feedback
-from django.contrib.auth import get_user_model
-from .models import Notification
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.generic import ListView
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.mixins import LoginRequiredMixin 
+from notifications.models import Notification
 
-User = get_user_model()
+class NotificationListView(LoginRequiredMixin, ListView):
+    model = Notification
+    template_name = 'accounts/notifications.html' 
+    context_object_name = 'notifications'
+    paginate_by = 10
 
-@login_required
-def employee_notifications(request):
-    """
-    Displays notifications for the currently logged-in user.
-    Only accessible by authenticated users.
-    """
-    print(f"DEBUG: Accessing employee_notifications for user: {request.user.email} (ID: {request.user.id})")
-    # Ensure notifications are fetched for the current user and ordered by creation time
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
-    print(f"DEBUG: Found {notifications.count()} notifications for {request.user.email}.")
-    
-    # Render the notifications list template, passing the fetched notifications
-    # Ensure 'notifications/list.html' exists and extends base.html
-    return render(request, 'notifications/list.html', {'notifications': notifications})
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user).order_by('-created_at')
 
 @login_required
-def create_notification_for_employees(request):
-    """
-    Allows an admin to create a notification for all employees.
-    This is for demonstration/admin use, usually part of a bigger admin panel.
-    """
-    print(f"DEBUG: create_notification_for_employees accessed by user: {request.user.email}, role: {request.user.role}")
-    # Restrict this view to only 'admin' role users for security
-    if request.user.role != 'admin':
-        messages.error(request, "You are not authorized to create notifications.")
-        return redirect('jobsapp:home') # Redirect to home or employee notifications if not admin
-
+def mark_notification_read(request, notification_id):
     if request.method == 'POST':
-        message_text = request.POST.get('message_text', '').strip()
-        print(f"DEBUG: Admin notification message received: '{message_text}'")
-        if not message_text:
-            messages.error(request, "Notification message cannot be empty.")
-            # Re-render the form if the message is empty
-            return render(request, 'notifications/create_notification.html', {'employees': User.objects.filter(role='employee')}) 
-        
-        employees = User.objects.filter(role='employee', is_active=True)
-        count = 0
-        print(f"DEBUG: Attempting to send admin notification to {employees.count()} active employees.")
-        for employee in employees:
-            try:
-                Notification.objects.create(
-                    user=employee,
-                    message=message_text # Use the message from the form
-                )
-                count += 1
-                print(f"DEBUG: Admin notification sent to {employee.email}")
-            except Exception as e:
-                print(f"ERROR: Could not create admin notification for {employee.email}: {e}")
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.is_read = True
+        notification.save()
+        messages.success(request, _("Notification marked as read."))
+    return redirect('notifications:list')
 
-        messages.success(request, f"Notification '{message_text}' sent to {count} employees.")
-        return redirect('notifications:employee_notifications') # Redirect after successful creation
-    
-    # For GET requests, render a form to create a notification
-    return render(request, 'notifications/create_notification.html', {'employees': User.objects.filter(role='employee')})
+@login_required
+def mark_all_notifications_read(request):
+    if request.method == 'POST':
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        messages.success(request, _("All notifications marked as read."))
+    return redirect('notifications:list')
+
+@login_required
+def delete_notification(request, notification_id):
+    if request.method == 'POST':
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.delete()
+        messages.success(request, _("Notification deleted."))
+    return redirect('notifications:list')

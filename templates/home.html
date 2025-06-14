@@ -2,8 +2,8 @@
 
 {% extends 'base.html' %}
 {% load static %}
-{% load i18n %} {# Load i18n for translations #}
-{% load humanize %} {# For intcomma filter #}
+{% load i18n %}
+{% load humanize %}
 
 {% block title %}
     {% trans 'Home' %}
@@ -42,14 +42,10 @@
                                     {% endif %}
                                 </h6>
                                 <p class="card-text"><i class="fa fa-map-marker"></i> {{ job.location }}</p>
-                                <p class="card-text">{% trans 'Type' %}: 
-                                    {% if job.type == '1' %}Full time
-                                    {% elif job.type == '2' %}Part time
-                                    {% else %}Internship
-                                    {% endif %}
-                                </p>
+                                {# CRITICAL FIX: Use get_job_type_display for correct translation and readability #}
+                                <p class="card-text">{% trans 'Type' %}: {{ job.get_job_type_display }}</p>
                                 <p class="card-text">{% trans 'Salary' %}: 
-                                    {% if job.salary > 0 %}
+                                    {% if job.salary and job.salary > 0 %}
                                         {{ job.salary | intcomma }}/{% trans 'Monthly' %}
                                     {% else %}
                                         {% trans 'Negotiable' %}
@@ -138,4 +134,3 @@
     </section>
 
 {% endblock %}
-

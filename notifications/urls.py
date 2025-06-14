@@ -1,13 +1,12 @@
-    # D:\django-job-portal-master\notifications\urls.py
-
+# D:\django-job-portal-master\notifications\urls.py
 from django.urls import path
 from . import views
 
-app_name = "notifications" # Define the app_name for this app
+app_name = "notifications"
 
 urlpatterns = [
-        path('notifications/', views.employee_notifications, name='employee_notifications'),
-        path('notifications/create/', views.create_notification_for_employees, name='create_notification'),
-        # Add any other notification-related URLs here
-    ]
-    
+    path('', views.NotificationListView.as_view(), name='list'),
+    path('mark-read/<int:notification_id>/', views.mark_notification_read, name='mark_read'),
+    path('mark-all-read/', views.mark_all_notifications_read, name='mark_all_read'),
+    path('delete/<int:notification_id>/', views.delete_notification, name='delete'),
+]

@@ -3,24 +3,20 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserChangeForm 
-from django.contrib.auth.forms import UserCreationForm as AuthUserCreationForm # Renamed to avoid clash
+from django.contrib.auth.forms import UserCreationForm as AuthUserCreationForm 
 
 from django.utils.translation import gettext_lazy as _ 
 
-from jobs.models import Company # Required for EmployerProfileForm to interact with Company model
+from jobs.models import Company 
 
 User = get_user_model()
 
-# Define GENDER_CHOICES directly in forms.py to avoid model loading issues
 GENDER_CHOICES = (
     ('male', _('Male')),
     ('female', _('Female')),
     ('other', _('Other')),
     ('prefer_not_to_say', _('Prefer not to say')),
 )
-
-
-# --- Registration Forms (inheriting from forms.ModelForm) ---
 
 class RegisterEmployeeForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label=_("Password"))
@@ -53,9 +49,9 @@ class RegisterEmployeeForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password"]) # Hash the password
+        user.set_password(self.cleaned_data["password"])
         user.role = 'employee'
-        user.username = self.cleaned_data['email'] # Assign email to username field
+        user.username = self.cleaned_data['email'] 
         if commit:
             user.save()
         return user
@@ -91,15 +87,14 @@ class RegisterEmployerForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password"]) # Hash the password
+        user.set_password(self.cleaned_data["password"])
         user.role = 'employer'
-        user.username = self.cleaned_data['email'] # Assign email to username field
+        user.username = self.cleaned_data['email'] 
         if commit:
             user.save()
         return user
 
 
-# --- Authentication Form ---
 class LoginAuthenticationForm(AuthenticationForm): 
     username = forms.CharField(
         label=_("Email"),
@@ -110,9 +105,7 @@ class LoginAuthenticationForm(AuthenticationForm):
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'})
     )
 
-
-# --- Admin-Specific Forms for CustomUser ---
-class CustomUserCreationForm(AuthUserCreationForm): # Inherits from Django's UserCreationForm
+class CustomUserCreationForm(AuthUserCreationForm):
     class Meta(AuthUserCreationForm.Meta):
         model = User
         fields = ('email', 'first_name', 'last_name', 'gender', 'role', 'is_company', 'is_admin',)
@@ -133,7 +126,7 @@ class CustomUserCreationForm(AuthUserCreationForm): # Inherits from Django's Use
         return user
 
 
-class CustomUserChangeForm(UserChangeForm): # Inherits from Django's UserChangeForm
+class CustomUserChangeForm(UserChangeForm):
     class Meta(UserChangeForm.Meta):
         model = User
         fields = ('email', 'first_name', 'last_name', 'gender', 'role', 'is_company', 'is_admin', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions',)
@@ -143,7 +136,6 @@ class CustomUserChangeForm(UserChangeForm): # Inherits from Django's UserChangeF
         self.fields['email'].widget.attrs['readonly'] = True
 
 
-# --- Employee Profile Update Form (for regular users) ---
 class EmployeeProfileForm(forms.ModelForm):
     class Meta:
         model = User 
@@ -154,8 +146,6 @@ class EmployeeProfileForm(forms.ModelForm):
             'gender': forms.Select(attrs={'class': 'form-control'}), 
         }
 
-
-# --- Employer Profile Update Form (for regular users, not admin) ---
 class EmployerProfileForm(forms.ModelForm):
     first_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
     last_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -181,13 +171,12 @@ class EmployerProfileForm(forms.ModelForm):
                 self.fields['company_name'].initial = company.name
                 self.fields['company_description'].initial = company.description
                 self.fields['website'].initial = company.website
-            else: 
+            else:
                 self.fields['company_name'].initial = ''
                 self.fields['company_description'].initial = ''
                 self.fields['website'].initial = ''
         
         self.fields['email'].widget.attrs.update({'class': 'form-control'})
-
 
     def save(self, commit=True):
         user = super().save(commit=False)

@@ -1,12 +1,11 @@
-# D:\django-job-portal-master\tags\models.py
+# D:\django-job-portal-master\categories\admin.py
 
-from django.db import models
+from django.contrib import admin
+from .models import Category
 
-class Tag(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    slug = models.SlugField(unique=True, max_length=50) # Added slug for cleaner URLs
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'created_at')
+    search_fields = ('name',)
+    prepopulated_fields = {'slug': ('name',)}
 

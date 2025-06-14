@@ -5,8 +5,8 @@ from .models import Job, Applicant, Favorite # Import models from jobsapp
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('title', 'company', 'user', 'category', 'type', 'vacancy', 'last_date', 'is_published', 'filled', 'created_at')
-    list_filter = ('is_published', 'filled', 'type', 'category', 'created_at')
+    list_display = ('title', 'company', 'user', 'category', 'job_type', 'vacancy', 'last_date', 'is_published', 'filled', 'created_at')
+    list_filter = ('is_published', 'filled', 'job_type', 'category', 'created_at')
     search_fields = ('title', 'location', 'company__name', 'user__email') # Search by job title, location, company name, or user email
     raw_id_fields = ('company', 'user') # Use raw ID input for ForeignKeys to Company and User
     filter_horizontal = ('tags',) # For ManyToMany field 'tags'

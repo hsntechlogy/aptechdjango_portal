@@ -1,31 +1,51 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% load static %}
-
-{% block title %}
-    My resumes
-{% endblock %}
+{% block title %}{% trans 'My Resumes' %}{% endblock %}
 
 {% block content %}
-    <div class="container">
-        <div class="row mt-2 mb-2">
-            <div class="col-md-12">
-                <h1>Your Resumes</h1>
-                <a href="{% url 'resume_cv:templates' %}" class="btn btn-primary">Create New Resume</a>
-            </div>
-        </div>
+<div class="container py-5">
+    <h1 class="mb-4">{% trans 'My Resumes' %}</h1>
+    <p class="lead">{% trans 'Here you can view and download your uploaded resumes.' %}</p>
+
+    <div class="mb-4">
+        <a href="{% url 'resume_cv:create_resume' %}" class="btn btn-primary">{% trans 'Upload New Resume' %}</a>
+    </div>
+
+    {% if resumes %}
         <div class="row">
             {% for resume in resumes %}
-                <div class="col-md-4 mb-2">
-                    <div class="card">
-                        <img src="https://images.pexels.com/photos/590044/pexels-photo-590044.jpeg?auto=compress&cs=tinysrgb&w=600" class="card-img-top" alt="...">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ resume.name }}</h5>
-                            <a href="{% url 'resume_cv:builder' resume.code %}" class="btn btn-primary">Edit</a>
-                        </div>
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ resume.name }}</h5>
+                        <p class="card-text text-muted">{% trans 'Uploaded on:' %} {{ resume.uploaded_at|date:"M d, Y" }}</p>
+                        {% if resume.file %}
+                            <a href="{% url 'resume_cv:download_resume' resume.id %}" class="btn btn-info btn-sm">
+                                <i class="fas fa-download"></i> {% trans 'Download PDF' %}
+                            </a>
+                        {% else %}
+                            <span class="text-warning">{% trans 'No file uploaded for this resume.' %}</span>
+                            {% comment %}
+                                This section below is for if you still have old builder-generated resumes
+                                stored as HTML/CSS in the database and want to allow downloading them as PDF.
+                                If not, you can remove this comment block and the inner content.
+                            {% endcomment %}
+                            {% if resume.content and resume.style %}
+                                <a href="{% url 'resume_cv:download_resume' resume.id %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-file-pdf"></i> {% trans 'Convert & Download (Old Format)' %}
+                                </a>
+                            {% endif %}
+                        {% endif %}
                     </div>
                 </div>
+            </div>
             {% endfor %}
         </div>
-    </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            {% trans 'You have not uploaded any resumes yet.' %}
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

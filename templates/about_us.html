@@ -1,57 +1,73 @@
+{# D:\django-job-portal-master\templates\about_us.html #}
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
+
 {% block title %}
-    About Us
+    {% trans 'About Us' %}
 {% endblock %}
 
 {% block content %}
-    <section class="bg-light-gray">
+    <section class="bg-light-gray py-5">
+        <div class="container">
+            <h1 class="heading text-center">{% trans 'About Us' %}</h1>
+            <p class="text-center text-muted">{% trans 'Learn more about our mission and vision.' %}</p>
+        </div>
+    </section>
+
+    <section class="py-5">
         <div class="container">
             <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <h1 class="heading">About <span class="accent">Us</span></h1>
-                    <p class="lead text-center">Your trusted partner in job search and career growth</p>
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2>{% trans 'Our Mission' %}</h2>
+                    <p class="lead">{% trans 'Our mission is to bridge the gap between talented individuals and exceptional career opportunities. We strive to simplify the job search and hiring process, making it efficient and effective for everyone involved.' %}</p>
+                    <p>{% trans 'We are dedicated to fostering growth, innovation, and success by connecting the right talent with the right companies.' %}</p>
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="col-lg-6 mb-4">
+                    <h3>{% trans 'For Job Seekers' %}</h3>
+                    <p>{% trans 'Discover thousands of job listings from diverse industries. Create a compelling profile, upload your resume, and apply to your dream jobs with ease. Get real-time notifications about new opportunities and application statuses.' %}</p>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <h3>{% trans 'For Employers' %}</h3>
+                    <p>{% trans 'Find top talent effortlessly. Post job openings, manage applications, and connect with qualified candidates. Our platform provides powerful tools to streamline your recruitment process and build your ideal team.' %}</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section>
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="box">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h4>Our Mission</h4>
-                                <p>We are dedicated to connecting talented professionals with their dream careers. Our platform serves as a bridge between job seekers and employers, making the hiring process seamless and efficient.</p>
-                                
-                                <h4 class="mt-5">What We Offer</h4>
-                                <ul class="list-unstyled">
-                                    <li><i class="fa fa-check text-primary mr-2"></i> Easy job search and application process</li>
-                                    <li><i class="fa fa-check text-primary mr-2"></i> Professional resume builder</li>
-                                    <li><i class="fa fa-check text-primary mr-2"></i> Direct communication with employers</li>
-                                    <li><i class="fa fa-check text-primary mr-2"></i> Career growth resources</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <img src="{% static 'img/company-1.png' %}" alt="About Us" class="img-fluid rounded">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="section-divider">
+    <section class="section-divider py-5 text-white text-center">
         <div class="overlay"></div>
         <div class="container">
             <div class="row">
-                <div class="col-lg-12 text-center">
-                    <p>Ready to start your career journey?</p>
-                    <p><a href="{% url 'jobs:jobs' %}" class="btn btn-outline-light">Browse Jobs</a></p>
+                <div class="col-lg-12">
+                    <p class="lead mb-4">{% trans 'Ready to start your career journey?' %}</p>
+                    {# CRITICAL FIX: Changed "jobs:jobs" to "jobsapp:jobs" #}
+                    <p><a href="{% url 'jobsapp:jobs' %}" class="btn btn-outline-light">{% trans 'Browse Jobs' %}</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light">
+        <div class="container text-center">
+            <h2>{% trans 'Our Values' %}</h2>
+            <div class="row mt-4">
+                <div class="col-md-4 mb-4">
+                    <i class="fa fa-handshake-o fa-3x text-primary mb-3"></i>
+                    <h4>{% trans 'Integrity' %}</h4>
+                    <p>{% trans 'We operate with honesty and transparency in all our interactions.' %}</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <i class="fa fa-lightbulb-o fa-3x text-primary mb-3"></i>
+                    <h4>{% trans 'Innovation' %}</h4>
+                    <p>{% trans 'We continuously seek new ways to improve our platform and services.' %}</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <i class="fa fa-users fa-3x text-primary mb-3"></i>
+                    <h4>{% trans 'Community' %}</h4>
+                    <p>{% trans 'We believe in building a strong community of professionals and companies.' %}</p>
                 </div>
             </div>
         </div>

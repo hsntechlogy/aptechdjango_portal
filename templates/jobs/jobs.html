@@ -1,32 +1,39 @@
+{# D:\django-job-portal-master\templates\jobs\jobs.html #}
 {% extends 'base.html' %}
 {% load static %}
-{% load is_favorited %}
+{% load i18n %} {# Load i18n for translation tags #}
+{% load humanize %}
+{% load jobsapp_tags %} {# Ensure jobsapp_tags is loaded here for both is_favorited and is_already_applied #}
+
+
 {% block title %}
-    All jobs
+    {% trans 'All Jobs' %}
 {% endblock %}
 
 {% block content %}
 
-    <section class="job-form-section job-form-section--compressed">
+    <section class="job-form-section job-form-section--compressed bg-light-gray py-5">
         <div class="container">
-            <h4 class="heading">Find a <span class="accent">job </span> you will <span class="accent">love</span></h4>
-            <form id="job-main-form" method="get" class="job-main-form">
+            <h4 class="heading text-center">{% trans 'Find a' %} <span class="accent">{% trans 'job' %} </span> {% trans 'you will' %} <span class="accent">{% trans 'love' %}</span></h4>
+            {# Search form - updated to match jobsapp:search URL #}
+            <form id="job-main-form" method="get" action="{% url 'jobsapp:search' %}" class="job-main-form mt-4">
                 <div class="controls">
                     <div class="row align-items-end">
-                        <div class="col-sm-1 col-lg-2"></div>
-                        <div class="col-sm-5 col-lg-4 form-group">
-                            <label for="profession">Profession</label>
-                            <input type="text" id="profession" name="profession"
-                                   placeholder="Profession you are looking for" class="form-control">
+                        <div class="col-md-5 form-group">
+                            <label for="id_position">{% trans 'Job Title / Keyword' %}</label>
+                            <input type="text" id="id_position" name="position"
+                                   placeholder="{% trans 'e.g., Software Engineer, Marketing' %}" 
+                                   value="{{ request.GET.position }}" class="form-control">
                         </div>
-                        <div class="col-sm-5 col-lg-4 form-group">
-                            <label for="location">Location</label>
-                            <input type="text" id="location" name="location" placeholder="Any particular location?"
-                                   value="" class="form-control">
+                        <div class="col-md-4 form-group">
+                            <label for="id_location">{% trans 'Location' %}</label>
+                            <input type="text" id="id_location" name="location" 
+                                   placeholder="{% trans 'e.g., New York, Remote' %}"
+                                   value="{{ request.GET.location }}" class="form-control">
                         </div>
-                        <div class="col-sm-1 col-lg-2 form-group">
-                            <button type="submit" class="btn btn-outline-white-primary job-main-form__button">
-                                <i class="fa fa-search"></i> Search
+                        <div class="col-md-3 form-group text-right">
+                            <button type="submit" class="btn btn-primary btn-lg mt-3">
+                                <i class="fa fa-search"></i> {% trans 'Search' %}
                             </button>
                         </div>
                     </div>
@@ -34,97 +41,107 @@
             </form>
         </div>
     </section>
-    <section>
+
+    <section class="py-5">
         <div class="container">
-            <h3 class="heading">We have found <span class="accent">{{ total_jobs }}</span> jobs</h3>
-            {% for job in jobs %}
-                <div class="job-listing  ">
-                    <div class="row">
-                        <div class="col-md-12 col-lg-6">
-                            <div class="row">
-                                <div class="col-2">
-                                    <img src="{% static 'img/company-1.png' %}"
-                                         alt="company image " class="img-fluid">
-                                </div>
-                                <div class="col-10">
-                                    <h4 class="job__title"><a
-                                            href="{% url 'jobs:jobs-detail' job.id %}">{{ job.title }}</a></h4>
-                                    <p class="job__company">
-                                        {{ job.company_name }}
-                                    </p>
-                                    {% for tag in job.tags.all %}
-                                        <span style="color: #ffffff;" class="badge featured-badge badge-secondary">{{ tag.name }}</span>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-10 col-md-3 col-lg-2 ml-auto">
-                            <i class="fa fa-map-marker job__location"></i>
-                            {{ job.location }}
-                        </div>
-                        <div class="col-10 col-md-3 col-lg-3 ml-auto">
-                            <p>Posted {{ job.created_at|timesince }}</p>
-                        </div>
-                        {% if user.is_authenticated and request.user.role == 'employee' %}
-                            <div class="col-sm-12 col-md-2 col-lg-1">
-                                <div class="job__star">
-                                    {% is_favorited job as is_already_favorited %}
-                                    {% if is_already_favorited %}
-                                        <a href="javascript:void(0)" data-toggle="tooltip" data-id="{{ job.id }}"
-                                           data-placement="top" title="Saved to favourites"
-                                           class="job__star__link favorite">
-                                            <i class="fa fa-star"></i>
-                                        </a>
+            <h3 class="heading mb-4">{% trans 'We have found' %} <span class="accent">{{ jobs.count }}</span> {% trans 'jobs' %}</h3>
+            {% if jobs %}
+                {% for job in jobs %}
+                    <div class="job-listing d-flex flex-wrap align-items-center mb-4 p-4 shadow-sm rounded">
+                        <div class="col-md-12 col-lg-8">
+                            <div class="row align-items-center">
+                                <div class="col-2 col-md-1">
+                                    {% if job.company and job.company.logo %}
+                                        <img src="{{ job.company.logo.url }}" alt="{{ job.company.name }} logo" class="img-fluid rounded-circle" style="max-width: 60px;">
                                     {% else %}
-                                        <a href="javascript:void(0)" data-toggle="tooltip" data-id="{{ job.id }}"
-                                           data-placement="top" title="Save to favourites" class="job__star__link">
-                                            <i class="fa fa-star"></i>
-                                        </a>
+                                   <img src="{% static 'img/google.png' %}" alt="Company Logo" class="img-fluid rounded-circle" style="max-width: 60px;">
+
+                                    {% endif %}
+                                </div>
+                                <div class="col-10 col-md-11">
+                                    <h4 class="job__title mb-1"><a href="{% url 'jobsapp:jobs-detail' job.id %}" class="text-dark">{{ job.title }}</a></h4>
+                                    <p class="job__company text-muted mb-2">
+                                        {% if job.company %}
+                                            <a href="{% url 'jobsapp:company_detail' pk=job.company.id %}" style="color: #1b1e21">{{ job.company.name }}</a>
+                                        {% else %}
+                                            {% trans 'Unknown Company' %}
+                                        {% endif %}
+                                    </p>
+                                    {% if job.tags.exists %}
+                                        <div class="mt-2">
+                                            {% for tag in job.tags.all %}
+                                                <span class="badge badge-secondary mr-1">{{ tag.name }}</span>
+                                            {% endfor %}
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
-                        {% endif %}
+                        </div>
+                        <div class="col-10 col-md-4 col-lg-2 ml-auto text-center">
+                            <i class="fa fa-map-marker job__location"></i> {{ job.location }}
+                            <p class="text-muted text-sm mt-1">{% trans 'Posted' %} {{ job.created_at|timesince }} {% trans 'ago' %}</p>
+                        </div>
+                        <div class="col-10 col-md-4 col-lg-2 ml-auto text-center">
+                            <a href="{% url 'jobsapp:jobs-detail' job.id %}" class="btn btn-primary rounded-pill mb-2">{% trans 'View Details' %}</a>
+                            
+                            {# CRITICAL FIX: is_favorited tag call now correctly passes 'user' #}
+                            {% if user.is_authenticated and user.role == 'employee' %}
+                                {% is_favorited user job as is_already_favorited %}
+                                <form action="{% url 'jobsapp:favorite' %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="job_id" value="{{ job.id }}">
+                                    <button type="submit" class="btn btn-outline-info rounded-pill">
+                                        {% if is_already_favorited %}
+                                            <i class="fa fa-star"></i> {% trans 'Remove Favorite' %}
+                                        {% else %}
+                                            <i class="fa fa-star-o"></i> {% trans 'Add to Favorites' %}
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-            {% endfor %}
-            {% if is_paginated %}
-                <div class="row">
-                    <div class="col-md-12">
-                        <nav aria-label="Page navigation example" class="d-flex justify-content-center mt-4 mb-4">
-                            <ul class="pagination">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a href="?page={{ page_obj.previous_page_number }}"
-                                           class="page-link">&laquo;</a>
-                                    </li>
-                                {% else %}
-                                    <li class="page-item disabled">
-                                        <a class="page-link">&laquo;</a>
-                                    </li>
-                                {% endif %}
-                                {% for i in page_obj.paginator.page_range %}
-                                    {% if page_obj.number == i %}
-                                        <li class="page-item active">
-                                            <a class="page-link">{{ i }}</a>
+                {% endfor %}
+
+                {# Pagination #}
+                {% if is_paginated %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <nav aria-label="Page navigation example" class="d-flex justify-content-center mt-4 mb-4">
+                                <ul class="pagination">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a href="?page={{ page_obj.previous_page_number }}"
+                                               class="page-link">&laquo;</a>
                                         </li>
                                     {% else %}
-                                        <li class="page-item">
+                                        <li class="page-item disabled">
+                                            <a class="page-link">&laquo;</a>
+                                        </li>
+                                    {% endif %}
+                                    {% for i in page_obj.paginator.page_range %}
+                                        <li class="page-item {% if page_obj.number == i %}active{% endif %}">
                                             <a href="?page={{ i }}" class="page-link">{{ i }}</a>
                                         </li>
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a href="?page={{ page_obj.next_page_number }}" class="page-link">&raquo;</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <a class="page-link">&raquo;</a>
+                                        </li>
                                     {% endif %}
-                                {% endfor %}
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a href="?page={{ page_obj.next_page_number }}" class="page-link">&raquo;</a>
-                                    </li>
-                                {% else %}
-                                    <li class="page-item disabled">
-                                        <a class="page-link">&raquo;</a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
+                {% endif %}
+
+            {% else %}
+                <div class="alert alert-info text-center mt-4">
+                    {% trans 'No job openings available at the moment. Please check back later!' %}
                 </div>
             {% endif %}
         </div>
@@ -132,9 +149,16 @@
 
 {% endblock %}
 
-{% block javascripts %}
+{% block javascripts %} {# Changed block name to 'javascripts' to match base.html's block #}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.js"></script>
 
     <script>
+        // Ensure this script only runs if select2 is actually needed on this page
+        // $('.js-select2').select2({
+        //     theme: "bootstrap"
+        // });
+
         let csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();
 
         function csrfSafeMethod(method) {
@@ -150,31 +174,37 @@
             }
         });
 
-        $('.job__star__link').on('click', function () {
-            let job_id = $(this).data('id');
+        $('.job-listing .btn-outline-info').on('click', function (e) {
+            e.preventDefault(); // Prevent default form submission
+            let form = $(this).closest('form');
+            let job_id = form.find('input[name="job_id"]').val();
             let that = $(this);
+
             $.ajax({
                 type: "POST",
-                url: "{% url 'jobs:favorite' %}",
-                data: {job_id},
-                success: function (res, textStatus, xhr) {
+                url: "{% url 'jobsapp:favorite' %}", 
+                data: {job_id: job_id}, // Pass job_id as an object
+                success: function (res) {
                     if (res.status === "added") {
-                        that.addClass('favorite');
+                        that.html('<i class="fa fa-star"></i> {% trans "Remove Favorite" %}');
+                        that.removeClass('btn-outline-info').addClass('btn-info'); // Example: Change button style
                         toastr.success(res.message);
                     } else if (res.status === "removed") {
-                        document.activeElement.blur();
-                        that.removeClass('favorite');
+                        that.html('<i class="fa fa-star-o"></i> {% trans "Add to Favorites" %}');
+                        that.removeClass('btn-info').addClass('btn-outline-info'); // Example: Change button style
                         toastr.warning(res.message);
                     }
                 },
-                error: function (err, textStatus, xhr) {
-                    if (xhr === "Unauthorized") {
-                        toastr.error("Unauthorized");
+                error: function (xhr, textStatus, errorThrown) {
+                    if (xhr.status === 401) {
+                        toastr.error("{% trans 'Authentication required. Please log in.' %}");
+                        // Optionally redirect to login page
+                        // window.location.href = "{% url 'accounts:login' %}"; 
                     } else {
-                        toastr.error("Something wrong");
+                        toastr.error("{% trans 'Something went wrong. Please try again.' %}");
                     }
                 }
-            })
+            });
         });
     </script>
 

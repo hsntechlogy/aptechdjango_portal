@@ -1,0 +1,168 @@
+{# D:\django-job-portal-master\templates\jobs\job_detail.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+{% load humanize %}
+{% load jobsapp_tags %} 
+
+
+{% block title %}
+    {{ job.title }} - {% trans 'Job Details' %}
+{% endblock %}
+
+{% block content %}
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <h1 class="heading text-center">{{ job.title }}</h1>
+        <p class="text-center text-muted">
+            {% if job.company %}{{ job.company.name }}{% else %}{% trans 'Unknown Company' %}{% endif %} - {{ job.location }}
+        </p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card p-4 shadow-sm mb-4">
+                    <h4 class="mb-3">{% trans 'Job Description' %}</h4>
+                    <div class="job-description-content">
+                        {{ job.description|safe }}
+                    </div>
+                </div>
+
+                {% if job.responsibilities %}
+                <div class="card p-4 shadow-sm mb-4">
+                    <h4 class="mb-3">{% trans 'Responsibilities' %}</h4>
+                    <div class="job-description-content">
+                        {{ job.responsibilities|safe }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if job.requirements %}
+                <div class="card p-4 shadow-sm mb-4">
+                    <h4 class="mb-3">{% trans 'Requirements' %}</h4>
+                    <div class="job-description-content">
+                        {{ job.requirements|safe }}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+            <div class="col-lg-4">
+                <div class="card sidebar-menu shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="h4 card-title">{% trans 'Job Summary' %}</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><strong>{% trans 'Location' %}:</strong> {{ job.location }}</li>
+                            <li><strong>{% trans 'Job Type' %}:</strong> {{ job.get_job_type_display }}</li>
+                            <li><strong>{% trans 'Salary' %}:</strong> 
+                                {% if job.salary and job.salary > 0 %}
+                                    ${{ job.salary | intcomma }}/{% trans 'Monthly' %}
+                                {% else %}
+                                    {% trans 'Negotiable' %}
+                                {% endif %}
+                            </li>
+                            <li><strong>{% trans 'Experience' %}:</strong> 
+                                {% if job.experience %}
+                                    {{ job.experience }}
+                                {% else %}
+                                    {% trans 'Not specified' %}
+                                {% endif %}
+                            </li>
+                            <li><strong>{% trans 'Vacancy' %}:</strong> {{ job.vacancy }}</li>
+                            <li><strong>{% trans 'Posted On' %}:</strong> {{ job.created_at|date:"M d, Y" }}</li>
+                            <li><strong>{% trans 'Application Deadline' %}:</strong> 
+                                {% if job.last_date %}
+                                    {{ job.last_date|date:"M d, Y" }}
+                                {% else %}
+                                    {% trans 'N/A' %}
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                {% if user.is_authenticated and user.role == 'employee' %}
+                <div class="card sidebar-menu shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="h4 card-title">{% trans 'Actions' %}</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        {% is_already_applied user job as has_applied %}
+                        {% if has_applied %}
+                            <button type="button" class="btn btn-secondary btn-block disabled" disabled>{% trans 'Already Applied' %}</button>
+                            <p class="text-muted text-sm mt-2">{% trans 'You have already submitted an application for this job.' %}</p>
+                        {% else %}
+                            <a href="{% url 'jobsapp:apply-job' job.id %}" class="btn btn-primary btn-block">{% trans 'Apply for this Job' %}</a>
+                        {% endif %}
+
+                        {% is_favorited user job as is_already_favorited %}
+                        <form action="{% url 'jobsapp:favorite' %}" method="post" class="mt-3">
+                            {% csrf_token %}
+                            <input type="hidden" name="job_id" value="{{ job.id }}">
+                            <button type="submit" class="btn btn-outline-info btn-block">
+                                {% if is_already_favorited %}<i class="fa fa-star"></i> {% trans 'Remove from Favorites' %}{% else %}<i class="fa fa-star-o"></i> {% trans 'Add to Favorites' %}{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% elif not user.is_authenticated %}
+                <div class="card sidebar-menu shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="h4 card-title">{% trans 'Apply Now' %}</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <p>{% trans 'Login as an employee to apply for this job.' %}</p>
+                        <a href="{% url 'accounts:login' %}" class="btn btn-success btn-block">{% trans 'Login' %}</a>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if job.tags.exists %}
+                <div class="card sidebar-menu shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="h4 card-title">{% trans 'Skills/Tags' %}</h3>
+                    </div>
+                    <div class="card-body">
+                        {% for tag in job.tags.all %}
+                            <span class="badge badge-primary mr-1 mb-1">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if job.company %}
+                <div class="card sidebar-menu shadow-sm mb-4">
+                    <div class="card-header">
+                        <h3 class="h4 card-title">{% trans 'About Company' %}</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        {% if job.company.logo %}
+                            <img src="{{ job.company.logo.url }}" alt="{{ job.company.name }} logo" class="img-fluid rounded-circle mb-3" style="max-width: 80px;">
+                        {% else %}
+                            <img src="{% static 'img/google.png' %}" alt="Company Logo" class="img-fluid rounded-circle mb-3" style="max-width: 80px;">
+
+                        {% endif %}
+                        <h5><a href="{% url 'jobsapp:company_detail' pk=job.company.id %}" class="text-dark">{{ job.company.name }}</a></h5>
+                        {# CRITICAL FIX: Changed default filter to if/else block for robustness with i18n #}
+                        <p class="text-sm text-muted">
+                            {% if job.company.description %}
+                                {{ job.company.description|truncatewords:20|safe }}
+                            {% else %}
+                                {% trans 'No description provided.' %}
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'jobsapp:company_detail' pk=job.company.id %}" class="btn btn-outline-primary btn-sm">{% trans 'View Company Profile' %}</a>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

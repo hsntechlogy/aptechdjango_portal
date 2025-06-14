@@ -1,97 +1,145 @@
+{# D:\django-job-portal-master\templates\jobs\company_details.html #}
 {% extends 'base.html' %}
 {% load static %}
-{% load i18n %} {# Added for potential trans tags if needed #}
+{% load i18n %}
+{% load humanize %}
+
 {% block title %}
-    Company Details: {{ company.name }}
+    {{ company.name }} - {% trans 'Company Profile' %}
 {% endblock %}
 
 {% block content %}
-    <section class="bg-light-gray">
-        <div class="container">
-            <h1 class="heading">{{ company.name }}<br>
-                <small>{% trans 'Company Profile' %}</small>
-            </h1>
-            <div class="job-detail-description">
-                {% if company.website %}
-                    <i class="fa fa-globe"></i> <a href="{{ company.website }}" target="_blank">{{ company.website }}</a>
+<section class="bg-light-gray py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                {% if company.logo %}
+                    <img src="{{ company.logo.url }}" alt="{{ company.name }} logo" class="img-fluid rounded-circle" style="max-width: 120px;">
+                {% else %}
+                    <img src="{% static '/static/img/company-1.png' %}" alt="Company Placeholder" class="img-fluid rounded-circle" style="max-width: 120px;">
                 {% endif %}
-                {# Add other company info like address, if available in your model #}
+            </div>
+            <div class="col-md-10">
+                <h1 class="heading mb-1">{{ company.name }}</h1>
+                {# CRITICAL FIX: Replaced default filter with if/else block for company.address #}
+                <p class="lead text-muted">
+                    {% if company.address %}
+                        {{ company.address }}
+                    {% else %}
+                        {% trans 'Location not specified' %}
+                    {% endif %}
+                </p>
+                {% if company.website %}
+                    <p class="text-sm"><i class="fa fa-globe mr-1"></i> <a href="{{ company.website }}" target="_blank">{{ company.website }}</a></p>
+                {% endif %}
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section>
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-8">
-                    <h4>{% trans 'About' %} {{ company.name }}</h4>
-                    <p>{{ company.description|default:"No description provided."|safe }}</p>
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card p-4 shadow-sm mb-4">
+                    <h4 class="mb-3">{% trans 'About Us' %}</h4>
+                    {# CRITICAL FIX: Replaced default filter with if/else block for company.description #}
+                    <p>
+                        {% if company.description %}
+                            {{ company.description|safe }}
+                        {% else %}
+                            {% trans 'No company description provided.' %}
+                        {% endif %}
+                    </p>
+                    {% if company.email %}
+                        <p><i class="fa fa-envelope-o mr-2"></i> {{ company.email }}</p>
+                    {% endif %}
+                    {% if company.phone_number %}
+                        <p><i class="fa fa-phone mr-2"></i> {{ company.phone_number }}</p>
+                    {% endif %}
+                </div>
 
-                    <hr>
-
-                    <h4>{% trans 'Jobs Posted by' %} {{ company.name }}</h4>
+                <div class="card p-4 shadow-sm mb-4">
+                    <h4 class="mb-3">{% trans 'Current Job Openings' %}</h4>
                     {% if jobs_by_company %}
                         {% for job in jobs_by_company %}
-                            <div class="job-listing job-listing--last">
-                                <div class="row">
-                                    <div class="col-md-12 col-lg-6">
-                                        <h4 class="job__title">
-                                            <a href="{% url 'jobsapp:jobs-detail' job.id %}">{{ job.title }}</a>
-                                        </h4>
-                                        <p class="job__company">{{ job.location }}</p>
-                                    </div>
-                                    <div class="col-md-12 col-lg-6 text-right">
-                                        <p class="job__date">Posted {{ job.created_at|timesince }} ago</p>
-                                    </div>
+                            <div class="job-listing d-flex flex-wrap align-items-center mb-3 p-3 border rounded">
+                                <div class="col-md-9">
+                                    <h5 class="job__title mb-1"><a href="{% url 'jobsapp:jobs-detail' job.id %}" class="text-dark">{{ job.title }}</a></h5>
+                                    <ul class="list-inline text-sm mb-0">
+                                        <li class="list-inline-item mr-3"><i class="fa fa-map-marker mr-1 text-primary"></i>{{ job.location }}</li>
+                                        <li class="list-inline-item mr-3"><i class="fa fa-money mr-1 text-primary"></i>
+                                            {% if job.salary and job.salary > 0 %}
+                                                ${{ job.salary | intcomma }}/{% trans 'Monthly' %}
+                                            {% else %}
+                                                {% trans 'Negotiable' %}
+                                            {% endif %}
+                                        </li>
+                                        <li class="list-inline-item"><i class="fa fa-clock-o mr-1 text-primary"></i>{{ job.get_job_type_display }}</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-3 text-right">
+                                    <a href="{% url 'jobsapp:jobs-detail' job.id %}" class="btn btn-sm btn-primary rounded-pill">{% trans 'View Job' %}</a>
                                 </div>
                             </div>
                         {% endfor %}
                     {% else %}
-                        <p>{% trans 'No jobs currently posted by this company.' %}</p>
+                        <p class="text-muted">{% trans 'No active job openings from this company at the moment.' %}</p>
                     {% endif %}
                 </div>
 
-                <div class="col-lg-4">
-                    {# Display Company Reviews Section #}
-                    <h4>{% trans 'Company Reviews' %}</h4>
-                    {% if reviews %} {# 'reviews' context variable is correctly passed from CompanyDetailView #}
-                        {% for review in reviews %}
-                            <div class="card p-3 mb-3">
-                                <strong>{{ review.user.get_full_name|default:review.user.email }}</strong> - ⭐{{ review.rating }}/5
-                                <p>{{ review.comment }}</p>
-                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <p>{% trans 'No reviews available.' %}</p>
-                    {% endif %}
-
-                    {# Review Submission Form #}
-                    {% if request.user.is_authenticated and request.user.role == 'employee' %}
-                        <hr>
-                        <h4>{% trans 'Add a Review' %}</h4>
-                        <form method="post" action="{% url 'jobsapp:add_review' company_id=company.id %}">
+                <div class="card p-4 shadow-sm mb-4">
+                    <h4 class="mb-3">{% trans 'Company Reviews' %}</h4>
+                    {% if user.is_authenticated and user.role == 'employee' %}
+                        <h5 class="mb-3">{% trans 'Leave a Review' %}</h5>
+                        <form method="post" action="{% url 'jobsapp:add_review' company.id %}">
                             {% csrf_token %}
                             <div class="form-group">
-                                <label for="rating">{% trans 'Rating' %}:</label>
-                                <input type="number" name="rating" id="rating" min="1" max="5" class="form-control" required>
+                                <label for="id_rating">{% trans 'Your Rating (1-5)' %}</label>
+                                <input type="number" id="id_rating" name="rating" min="1" max="5" class="form-control" required>
                             </div>
                             <div class="form-group">
-                                <label for="comment">{% trans 'Comment' %}:</label>
-                                <textarea name="comment" id="comment" rows="5" class="form-control" required></textarea>
+                                <label for="id_comment">{% trans 'Your Comment' %}</label>
+                                <textarea id="id_comment" name="comment" rows="4" class="form-control" placeholder="{% trans 'Share your experience with this company...' %}"></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary mt-3">{% trans 'Submit Review' %}</button>
+                            <button type="submit" class="btn btn-primary">{% trans 'Submit Review' %}</button>
                         </form>
-                        {% if error %} {# Assuming 'error' will be passed from the view on invalid form #}
-                            <p style="color: red;" class="mt-2">{{ error }}</p>
-                        {% endif %}
-                    {% elif not request.user.is_authenticated %}
-                        <p class="mt-3">{% trans 'Please' %} <a href="{% url 'accounts:login' %}">{% trans 'log in' %}</a> {% trans 'to add a review.' %}</p>
-                    {% else %} {# User is authenticated but not an employee (e.g., employer, admin) #}
-                        <p class="mt-3">{% trans 'Only employees can add reviews.' %}</p>
+                        <hr class="my-4">
+                    {% elif not user.is_authenticated %}
+                         <div class="alert alert-info text-center">
+                            {% trans 'Login as an employee to leave a review.' %} <a href="{% url 'accounts:login' %}">{% trans 'Login Here' %}</a>
+                        </div>
+                        <hr class="my-4">
+                    {% endif %}
+
+
+                    {% if reviews %}
+                        <div class="reviews-list mt-3">
+                            {% for review in reviews %}
+                                <div class="media mb-3 p-3 border rounded bg-light">
+                                    <div class="media-body">
+                                        <h5 class="mt-0 mb-1">{{ review.user.get_full_name|default:review.user.email }}</h5>
+                                        <div class="text-warning mb-1">
+                                            {% for i in "12345"|make_list %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="fa fa-star"></i>
+                                                {% else %}
+                                                    <i class="fa fa-star-o"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <p class="mb-0">{{ review.comment }}</p>
+                                        <small class="text-muted">{% trans 'Reviewed on' %} {{ review.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">{% trans 'No reviews yet. Be the first to leave one!' %}</p>
                     {% endif %}
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 {% endblock %}
