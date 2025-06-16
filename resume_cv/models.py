@@ -6,7 +6,9 @@ from django.db import models
 import uuid
 
 from accounts.models import CustomUser 
-from utils.filename import generate_file_name 
+# resume_cv/models.py
+from utils.filename import generate_file_name
+
 
 
 def resume_cv_directory_path(instance, filename):
