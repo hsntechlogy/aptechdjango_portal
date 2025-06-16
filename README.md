@@ -8,101 +8,91 @@
 
 ## Django Job Portal
 
-#### An open source online job portal.
+A fully functional job portal built using Django and MySQL.
 
-<p align="center">
-    <img alt="forks" src="https://img.shields.io/github/forks/manjurulhoque/django-job-portal?label=Forks&style=social"/>
-    <img alt="stars" src="https://img.shields.io/github/stars/manjurulhoque/django-job-portal?style=social"/>
-    <img alt="watchers" src="https://img.shields.io/github/watchers/manjurulhoque/django-job-portal?style=social"/>
-    <img alt="github Actions" src="https://github.com/manjurulhoque/django-job-portal/workflows/job-portal/badge.svg"/>
-</p>
+Live demo not available.
 
-Live: [Demo](http://djp.manjurulhoque.com/en/)
+---
 
-Used Tech Stack
+### 🛠 Used Tech Stack
 
 1. Django
-2. Sqlite
+2. MySQL
 
-### Screenshots
+---
 
-## Home page
+### 📸 Screenshots
+
+#### 🏠 Home Page
 <img src="screenshots/one.png" height="800">
 
-## Resume template page
-<img src="screenshots/six.png" height="800">
-<img src="screenshots/seven.png" height="800">
-
-## Login page
+#### 🔐 Login Page
 <img src="screenshots/five.png" width="800" alt="login">
 
-## Add new position as employer
+#### ➕ Add New Position as Employer
 <img src="screenshots/two.png" width="800" alt="form">
 
-## Job details
+#### 📄 Job Details
 <img src="screenshots/three.png" height="800" alt="details">
 
-## Swagger API
-<img src="screenshots/four.png" height="800">
+---
 
 <a name="local-venv"></a>
-### Local environment
+### ⚙️ Local Environment Setup
 
-#### Install
+#### 📥 Install
 
 1. Create a virtual environment
 
-    `virtualenv venv`
-
-    Or
-
-    `python3.11 -m venv venv`
+    ```bash
+    python -m venv venv
+    ```
 
 2. Activate it
 
-    `source venv/bin/activate`
+    - Windows:
+      ```bash
+      venv\Scripts\activate
+      ```
+    - macOS/Linux:
+      ```bash
+      source venv/bin/activate
+      ```
 
 3. Clone the repository and install the packages in the virtual env:
 
-    `pip install -r requirements.txt`
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-4. Add `.env` file.
+4. Add `.env` file (if required).
 
-    `cp .env.dev.sample .env`
+5. Add your MySQL configuration inside `settings.py` or through `.env`.
 
-5. Add Github client ID and client secret in the `.env` file
+---
 
-#### Run
+#### 🚀 Run
 
-1. With the venv activate it, execute:
+1. With the venv activated, run:
 
-    python manage.py collectstatic
+    ```bash
+    python manage.py migrate
+    ```
 
-   *Note* : Collect static is not necessary when debug is True (in dev mode)
+2. Run server:
 
-2. Create initial database:
+    ```bash
+    python manage.py runserver
+    ```
 
-    `python manage.py migrate`
+3. Default Django admin credentials:
 
-3. Load demo data (optional):
+    - **Email**: `hell@gmail.com`
+    - **Password**: `12345`
 
-    `python manage.py loaddata fixtures/app_name_initial_data.json --app app.model_name`
+---
 
-4. Run server:
+#### 🧪 Run tests
 
-    `python manage.py runserver`
-
-5. Default django admin credentials:
-
-    `email: admin@admin.com`
-    `password: admin`
-
-#### Run test:
-``python manage.py test``
-
-#### To dump data:
-``python manage.py dumpdata --format=json --indent 4 app_name > app_name/fixtures/app_name_initial_data.json``
-
-![Analytics](https://repobeats.axiom.co/api/embed/2ed66773eb8b3acef70bc808ddc6701253f2fc09.svg "Repobeats analytics image")
-
-Show your support by 🌟 the project!!
+```bash
+python manage.py test
